@@ -6,6 +6,57 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
+class HashGrid
+{
+    private Dictionary<Vector2Int, List<GameObject>> hashGrid = new Dictionary<Vector2Int, List<GameObject>>();
+    private int cellSize = 20;
+
+    public HashGrid(Vector2 planeSize)
+    {
+        InitializeCells(planeSize);
+    }
+
+    private void InitializeCells(Vector2 planeSize)
+    {
+        int xCells = Mathf.FloorToInt(planeSize.x / cellSize) / 2;
+        int yCells = Mathf.FloorToInt(planeSize.y / cellSize) / 2;
+
+        for (int x = -xCells; x <= xCells; x++)
+        {
+            for (int y = -yCells; y <= yCells; y++)
+            {
+                hashGrid[new Vector2Int(x, y)] = new List<GameObject>();
+            }
+        }
+    }
+
+    /**
+     * Get the key for the given position
+     */
+    internal Vector2Int GetCell(Vector3 position)
+    {
+        int x = Mathf.FloorToInt(position.x / cellSize);
+        int y = Mathf.FloorToInt(position.z / cellSize);
+        return new Vector2Int(x, y);
+    }
+
+    internal bool TryGetValue(Vector2Int key, out List<GameObject> value)
+    {
+        return hashGrid.TryGetValue(key, out value);
+    }
+
+    internal void Add(Vector3 position, GameObject prefab)
+    {
+        Vector2Int designatedCell = GetCell(position);
+        if (!hashGrid.ContainsKey(designatedCell))
+        {
+            hashGrid[designatedCell] = new List<GameObject>();
+        }
+        hashGrid[designatedCell].Add(prefab);
+    }
+}
+
+
 public class LevelGenerator : MonoBehaviour
 {
     // Material into which to feed the noise texture
@@ -34,20 +85,39 @@ public class LevelGenerator : MonoBehaviour
     // How far away should POIs spawn from eachother as a factor of their extents
     [SerializeField] private float spreadFactor = 2.0f;
 
+    [SerializeField] private GameObject marker;
+
     // Texture properties
     private int width = 1024;
     private int height = 1024;
     private Texture2D noise_texture;
 
+    // Track prefabs
     private List<GameObject> spawnedPrefabs = new List<GameObject>();
     private List<GameObject> spawnedPointsOfInterest = new List<GameObject>();
 
+    // Map prefabs into spatial cells
+    private HashGrid hashGrid;
+
+    private Vector2 planeSize;
+
     void Start()
     {
+        MeshRenderer mr = gameObject.GetComponent<MeshRenderer>();
+        planeSize = new Vector2(mr.bounds.size.x, mr.bounds.size.z);
+
+        hashGrid = new HashGrid(planeSize);
+        
+        // Generate noise texture
         noise_texture = GenerateGroundBlendTexture();
+        // Pass noise texture to ground mix shader
         groundMaterial.SetTexture("_NoiseTexture", noise_texture);
+
+        // Spawn prefabs
         SpawnPointsOfInterest();
         SpawnPrefabsOnNoise();
+
+        // DebugPrefabPosition(planeSize);
     }
 
     private void Update()
@@ -123,11 +193,8 @@ public class LevelGenerator : MonoBehaviour
 
     private void SpawnPointsOfInterest()
     {
-        MeshRenderer mr = gameObject.GetComponent<MeshRenderer>();
-        Vector2 planeSize = new Vector2(mr.bounds.size.x, mr.bounds.size.z);
-
         // Padding (avoid placing points of interest on the map edges)
-        planeSize *= 0.85f;
+        Vector2 paddedPlaneSize = planeSize * 0.85f;
 
         foreach (var obj in pointsOfInterest)
         {
@@ -138,9 +205,9 @@ public class LevelGenerator : MonoBehaviour
             while (!canSpawn && retries != 0)
             {
                 position = new Vector3(
-                    Random.Range(-planeSize.x / 2, planeSize.x / 2),
+                    Random.Range(-paddedPlaneSize.x / 2, paddedPlaneSize.x / 2),
                     0,
-                    Random.Range(-planeSize.y / 2, planeSize.y / 2)
+                    Random.Range(-paddedPlaneSize.y / 2, paddedPlaneSize.y / 2)
                 );
                 canSpawn = !CollisionTest(position, spawnedPointsOfInterest, spreadFactor);
                 retries--;
@@ -151,29 +218,9 @@ public class LevelGenerator : MonoBehaviour
         }
     }
 
-    private bool CollisionTest(Vector3 position, List<GameObject> collection, float radiusFactor)
-    {
-        foreach (var obj in collection)
-        {
-            Collider collider = obj.GetComponent<Collider>();
-            if (collider == null) continue;
-
-            // Add the safety radius to the objects extent
-            // i.e. half of it's collider's size + safety radius
-            float objExtent = collider.bounds.extents.magnitude;
-
-            if (Vector3.Distance(position, obj.transform.position) < (objExtent * radiusFactor))
-                return true;
-        }
-        return false;
-    }
-
     private void SpawnPrefabsOnNoise()
     {
         noise_texture = (Texture2D) groundMaterial.GetTexture("_NoiseTexture");
-
-        MeshRenderer mr = gameObject.GetComponent<MeshRenderer>();
-        Vector2 planeSize = new Vector2(mr.bounds.size.x, mr.bounds.size.z);
 
         for (int x = 0; x < noise_texture.width; x++)
         {
@@ -191,19 +238,91 @@ public class LevelGenerator : MonoBehaviour
                         (normalizedPos.y - 0.5f) * planeSize.y
                     );
 
+                    // Test collisions with POIs
                     if (CollisionTest(position, spawnedPointsOfInterest, safetyRadiusFactor)) continue;
+                    // Test collisions with other detail prefabs
+                    if (CollisionTest(position)) continue;
 
-                    // Spawn logic
+                    // Get pixel color
                     Color color = noise_texture.GetPixel(x, y);
                 
-                    // Choose prefab to spawn
+                    // Choose prefab to spawn based on terrain type (color intensity as determined by blend threshold)
                     GameObject prefab = SelectPrefab(color);
 
-                    // Spawn
-                    spawnedPrefabs.Add(Instantiate(prefab, position, Quaternion.identity));
+                    GameObject spawnedPrefab = Instantiate(prefab, position, Quaternion.identity);
+                    
+                    // Randomize prefab transform properties
+                    RandomizeScaleAndRotation(spawnedPrefab);
+                    
+                    spawnedPrefabs.Add(spawnedPrefab);
+
+                    // Add to hashgrid
+                    hashGrid.Add(position, spawnedPrefab);
                 }
             }
         }
+    }
+
+    private bool CollisionTest(Vector3 position)
+    {
+        // Determine which cell the given position belongs into
+        Vector2Int cell = hashGrid.GetCell(position);
+
+        // Look for collisions in all neighboring cells
+        // Particularly useful for objects that are located on the edges of a cell
+        for (int i = -1; i <= 1; i++)
+        {
+            for (int j = -1; j <= 1; j++)
+            {
+                Vector2Int neighborCell = cell + new Vector2Int(i, j);
+                if (hashGrid.TryGetValue(neighborCell, out List<GameObject> prefabsInCell))
+                {
+                    if (CollisionTest(position, prefabsInCell, safetyRadiusFactor))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private bool CollisionTest(Vector3 position, List<GameObject> collection, float radiusFactor)
+    {
+        foreach (var obj in collection)
+        {
+            Collider collider = obj.GetComponent<Collider>();
+            if (collider == null)
+                continue;
+
+            // Add the safety radius to the objects extent
+            // i.e. half of it's collider's size + safety radius
+            float objExtent = collider.bounds.extents.magnitude;
+
+            // Ignore safety margin if object is small
+            if (objExtent < 10.0f)
+            {
+                radiusFactor = 1;
+            }
+
+            if (Vector3.Distance(position, obj.transform.position) < (objExtent * radiusFactor))
+                return true;
+        }
+        return false;
+    }
+
+    private void RandomizeScaleAndRotation(GameObject prefab)
+    {
+        float scaleFactor = Random.Range(0.75f, 1.3f);
+        float rotationScale = Random.Range(0f, 360f);
+
+        float xScale = prefab.transform.localScale.x * scaleFactor;
+        float yScale = prefab.transform.localScale.y * scaleFactor;
+        float zScale = prefab.transform.localScale.z * scaleFactor;
+
+        prefab.transform.localScale = new Vector3(xScale, yScale, zScale);
+        prefab.transform.rotation = Quaternion.Euler(0, rotationScale, 0);
     }
 
     private bool ShouldSpawn()
@@ -222,4 +341,22 @@ public class LevelGenerator : MonoBehaviour
             return layer1Assets.ElementAt(Random.Range(0, layer1Assets.Count));
         }
     }
+    private void DebugPrefabPosition(Vector2 planeSize)
+    {
+        int xCells = Mathf.FloorToInt(planeSize.x / 20) / 2;
+        int yCells = Mathf.FloorToInt(planeSize.y / 20) / 2;
+
+        for (int x = -xCells; x <= xCells; x++)
+        {
+            for (int y = -yCells; y <= yCells; y++)
+            {
+                hashGrid.TryGetValue(new Vector2Int(x, y), out List<GameObject> list);
+                foreach (GameObject obj in list)
+                {
+                    Instantiate(marker, obj.transform.position, obj.transform.rotation);
+                }
+            }
+        }
+    }
+
 }

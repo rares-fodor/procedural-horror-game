@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: a051a9f799af537459e440bb186c48a9
+guid: 959654abe4bbcdc43bff93c16fe31109
 ModelImporter:
   serializedVersion: 21300
   internalIDToNameTable: []
@@ -9,6 +9,11 @@ ModelImporter:
       assembly: UnityEngine.CoreModule
       name: Material.001
     second: {fileID: 2100000, guid: 643435367b48e6b4e905ad6ff23894f5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: m_leaves
+    second: {fileID: 2100000, guid: 104222ab38d50b04ba6baecd3e376cba, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
@@ -42,7 +47,7 @@ ModelImporter:
     lODScreenPercentages: []
     globalScale: 1
     meshCompression: 0
-    addColliders: 1
+    addColliders: 0
     useSRGBMaterialColor: 1
     sortHierarchyByName: 1
     importVisibility: 1

@@ -9,15 +9,60 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float speed;
     [SerializeField] private Camera mainCamera;
 
-    private float h;
-    private float v;
-
     private void Start()
     {
         mainCamera = Camera.main;
     }
 
     void Update()
+    {
+        if (FreeLooking())
+        {
+            ApplyRotation();
+            ApplyTranslation(mainCamera.transform);
+        }
+        else
+        {
+            ApplyTranslation(transform);
+        }
+    }
+
+    private bool FreeLooking()
+    {
+        return Input.GetMouseButton(1);
+    }
+
+    private void ApplyRotation()
+    {
+        Quaternion rotation = mainCamera.transform.rotation;
+        rotation.z = 0f;
+        rotation.x = 0f;
+
+        transform.rotation = rotation;
+    }
+
+    private void ApplyTranslation(Transform tr)
+    {
+        float h = Input.GetAxisRaw("Horizontal");
+        float v = Input.GetAxisRaw("Vertical");
+
+        Vector3 forward = tr.forward;
+        Vector3 right = tr.right;
+
+        // Ignore y data and normalize to preserve movement speed
+        forward.y = 0;
+        right.y = 0;
+        forward = forward.normalized;
+        right = right.normalized;
+
+        // Transform to local space
+        Vector3 forwardRelative = v * forward;
+        Vector3 rightRelative = h * right;
+
+        Vector3 direction = (forwardRelative + rightRelative).normalized;
+        transform.position += direction * speed * Time.deltaTime;
+    }
+    private void ApplyRotationToPoint()
     {
         // Rotation
         Vector3 mousePosition = Input.mousePosition;
@@ -37,14 +82,5 @@ public class PlayerMovement : MonoBehaviour
             // Rotate only around the y-axis
             transform.rotation = Quaternion.Euler(0, angle, 0);
         }
-
-        // Translation
-        h = Input.GetAxisRaw("Horizontal");
-        v = Input.GetAxisRaw("Vertical");
-
-        // Normalized movement vector
-        Vector3 movement = new Vector3(h, 0, v).normalized;
-
-        transform.position += movement * speed * Time.deltaTime;
     }
 }
