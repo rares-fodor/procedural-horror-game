@@ -216,6 +216,9 @@ public class LevelGenerator : MonoBehaviour
             if (canSpawn)
                 spawnedPointsOfInterest.Add(Instantiate(obj, position, Quaternion.identity));
         }
+
+        // Notify gameController of stone positions
+        GameController.StoneLocationChangedEvent.Invoke(spawnedPointsOfInterest);
     }
 
     private void SpawnPrefabsOnNoise()
