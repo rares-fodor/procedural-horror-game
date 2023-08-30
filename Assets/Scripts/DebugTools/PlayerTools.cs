@@ -9,7 +9,7 @@ public class PlayerTools : MonoBehaviour
 
     private List<GameObject> stones;
 
-    private void Start()
+    private void Awake()
     {
         GameController.StoneLocationChangedEvent.AddListener(OnStoneLocationsChanged);
     }
@@ -28,6 +28,7 @@ public class PlayerTools : MonoBehaviour
         GameObject closest = GetClosestStone();
         if (closest != null)
         {
+            Debug.Log("Teleporting player!");
             Vector3 stonePos = closest.transform.position;
             Vector3 target = new Vector3(stonePos.x + 4, 0.5f, stonePos.z + 4);
             gameObject.transform.position = target;
