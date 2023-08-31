@@ -4,7 +4,8 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 
-public class PlayerMovement : MonoBehaviour
+[RequireComponent(typeof(Collider))]
+public class PlayerController : MonoBehaviour
 {
     [SerializeField] private float speed;
     [SerializeField] private Camera mainCamera;
@@ -15,6 +16,18 @@ public class PlayerMovement : MonoBehaviour
     }
 
     void Update()
+    {
+        HandleMovement();
+    }
+
+    /// <summary>
+    /// Updates the player transform to reflect its movement
+    /// </summary>
+    /// <remarks>
+    /// The player moves either relative to the camera or to itself
+    /// depending on whether the player is freelooking (behind itself for example).
+    /// </remarks>
+    private void HandleMovement()
     {
         if (FreeLooking())
         {
@@ -27,11 +40,34 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Tests whether the enemy has entered the players trigger collider.
+    /// Invokes a game event to signal the player's death if necessary.
+    /// </summary>
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Enemy"))
+        {
+            Debug.Log("Player dead!");
+            GameController.PlayerDied.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// Detects if the user is freelooking.
+    /// </summary>
+    /// <remarks>
+    /// If user is holding down LMB, the camera can rotate around the player
+    /// without affecting its direction.
+    /// </remarks>
     private bool FreeLooking()
     {
         return Input.GetMouseButton(1);
     }
 
+    /// <summary>
+    /// Applies the camera's rotation around the y axis to the player.
+    /// </summary>
     private void ApplyRotation()
     {
         Quaternion rotation = mainCamera.transform.rotation;
@@ -61,26 +97,5 @@ public class PlayerMovement : MonoBehaviour
 
         Vector3 direction = (forwardRelative + rightRelative).normalized;
         transform.position += direction * speed * Time.deltaTime;
-    }
-    private void ApplyRotationToPoint()
-    {
-        // Rotation
-        Vector3 mousePosition = Input.mousePosition;
-        mousePosition.z = mainCamera.transform.position.y - transform.position.y;
-
-        // Raycast mouse position to ground
-        Ray ray = mainCamera.ScreenPointToRay(mousePosition);
-
-        // Target separate layer for ground only (ignores other objects like trees and rocks)
-        if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, LayerMask.GetMask("Ground")))
-        {
-            Vector3 targetDirection = hit.point - transform.position;
-
-            // Angle to target position
-            float angle = Mathf.Atan2(targetDirection.x, targetDirection.z) * Mathf.Rad2Deg;
-
-            // Rotate only around the y-axis
-            transform.rotation = Quaternion.Euler(0, angle, 0);
-        }
     }
 }

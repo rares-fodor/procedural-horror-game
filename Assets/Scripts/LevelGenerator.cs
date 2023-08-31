@@ -6,16 +6,27 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
+/// <summary>
+/// Segment the terrain space into cells of a fixed size. Every <c>GameObject</c> added will be assigned to a cell
+/// and put into a list with the other <c>GameObjects</c> in the cell.
+/// Allows constant time access to any list of objects given a point on the plane.
+/// </summary>
 class HashGrid
 {
     private Dictionary<Vector2Int, List<GameObject>> hashGrid = new Dictionary<Vector2Int, List<GameObject>>();
     private int cellSize = 20;
 
+    /// <summary>
+    /// Construct hashgrid and initialize lists for every cell based the given plane size
+    /// </summary>
     public HashGrid(Vector2 planeSize)
     {
         InitializeCells(planeSize);
     }
 
+    /// <summary>
+    /// Initializes the lists that will hold the <c>GameObjects</c>
+    /// </summary>
     private void InitializeCells(Vector2 planeSize)
     {
         int xCells = Mathf.FloorToInt(planeSize.x / cellSize) / 2;
@@ -30,9 +41,9 @@ class HashGrid
         }
     }
 
-    /**
-     * Get the key for the given position
-     */
+    /// <summary>
+    /// Computes the key for a given position
+    /// </summary>
     internal Vector2Int GetCell(Vector3 position)
     {
         int x = Mathf.FloorToInt(position.x / cellSize);
@@ -40,11 +51,17 @@ class HashGrid
         return new Vector2Int(x, y);
     }
 
+    /// <summary>
+    /// Dictionary method wrapper. Returns a list of <c>GameObjects</c> for the given key
+    /// </summary>
     internal bool TryGetValue(Vector2Int key, out List<GameObject> value)
     {
         return hashGrid.TryGetValue(key, out value);
     }
 
+    /// <summary>
+    /// Inserts a <c>GameObject</c> into the corresponding list based on its position on the plane
+    /// </summary>
     internal void Add(Vector3 position, GameObject prefab)
     {
         Vector2Int designatedCell = GetCell(position);
@@ -63,11 +80,12 @@ public class LevelGenerator : MonoBehaviour
     [SerializeField] Material groundMaterial;
     
     // Noise parameters
-    [SerializeField] private float NoiseScale = 5;
-    [SerializeField] private Vector2 NoiseOffset = Vector2.zero;
+    [SerializeField] private float noiseScale = 5;
+    [SerializeField] private Vector2 noiseOffset = Vector2.zero;
 
     // Generate new level
     [SerializeField] private bool recompute = false;
+
     // Clear terrain details
     [SerializeField] private bool clearPrefabs = false;
     [SerializeField] private bool randomizeNoise = true;
@@ -77,7 +95,10 @@ public class LevelGenerator : MonoBehaviour
     [SerializeField] private List<GameObject> layer1Assets = new List<GameObject>();
     [SerializeField] private List<GameObject> layer2Assets = new List<GameObject>();
 
+    // Terrain color separation threshold
     [SerializeField] private float blendThreshold = 0.5f;
+
+    // Prefab spawn chance
     [SerializeField] private float detailDensity = 0.005f;
 
     // How many of each object can fit between itself and it's nearest possible neighbor
@@ -88,9 +109,9 @@ public class LevelGenerator : MonoBehaviour
     [SerializeField] private GameObject marker;
 
     // Texture properties
-    private int width = 1024;
-    private int height = 1024;
-    private Texture2D noise_texture;
+    private int texWidth = 1024;
+    private int texHeight = 1024;
+    private Texture2D noiseTexture;
 
     // Track prefabs
     private List<GameObject> spawnedPrefabs = new List<GameObject>();
@@ -101,6 +122,7 @@ public class LevelGenerator : MonoBehaviour
 
     private Vector2 planeSize;
 
+
     void Start()
     {
         MeshRenderer mr = gameObject.GetComponent<MeshRenderer>();
@@ -109,9 +131,9 @@ public class LevelGenerator : MonoBehaviour
         hashGrid = new HashGrid(planeSize);
         
         // Generate noise texture
-        noise_texture = GenerateGroundBlendTexture();
+        noiseTexture = GenerateGroundBlendTexture();
         // Pass noise texture to ground mix shader
-        groundMaterial.SetTexture("_NoiseTexture", noise_texture);
+        groundMaterial.SetTexture("_NoiseTexture", noiseTexture);
 
         // Spawn prefabs
         SpawnPointsOfInterest();
@@ -125,8 +147,8 @@ public class LevelGenerator : MonoBehaviour
         if (recompute)
         {
             Clear();
-            noise_texture = GenerateGroundBlendTexture();
-            groundMaterial.SetTexture("_NoiseTexture", noise_texture);
+            noiseTexture = GenerateGroundBlendTexture();
+            groundMaterial.SetTexture("_NoiseTexture", noiseTexture);
             SpawnPointsOfInterest();
             SpawnPrefabsOnNoise();
             recompute = false;
@@ -157,15 +179,22 @@ public class LevelGenerator : MonoBehaviour
         spawnedPointsOfInterest.Clear();
     }
 
+    /// <summary>
+    /// Generates a noise texture for the terrain.
+    /// </summary>
+    /// <remarks>
+    /// Will be passed to a shader graph where it will be used as a mask
+    /// to lerp two textures for the terrain.
+    /// </remarks>
     private Texture2D GenerateGroundBlendTexture()
     {
-        Texture2D texture = new Texture2D(width, height);
+        Texture2D texture = new Texture2D(texWidth, texHeight);
         
         if (randomizeNoise) RandomizeNoiseParams();
 
-        for (int x = 0; x < width; x++)
+        for (int x = 0; x < texWidth; x++)
         {
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < texHeight; y++)
             {
                 Color color = GenerateNoiseColor(x, y);
                 texture.SetPixel(x, y, color);
@@ -176,21 +205,31 @@ public class LevelGenerator : MonoBehaviour
         return texture;
     }
 
+    /// <summary>
+    /// Generates the color of a given pixel for the noise texture
+    /// using the <c>Mathf.PerlinNoise</c> method.
+    /// </summary>
     private Color GenerateNoiseColor (int x, int y)
     {
-        float xSample = (float) x / width * NoiseScale + NoiseOffset.x;
-        float ySample = (float) y / height * NoiseScale + NoiseOffset.y;
+        float xSample = (float) x / texWidth * noiseScale + noiseOffset.x;
+        float ySample = (float) y / texHeight * noiseScale + noiseOffset.y;
 
         float sample  = Mathf.PerlinNoise(xSample, ySample);
         return new Color(sample, sample, sample);
     }
     
+    /// <summary>
+    /// Sets the scale and offset to a random value
+    /// </summary>
     private void RandomizeNoiseParams()
     {
-        NoiseScale = Random.Range(3.0f, 5.0f);
-        NoiseOffset = new Vector2(Random.Range(0f, 100.0f), Random.Range(0f, 100.0f));
+        noiseScale = Random.Range(3.0f, 5.0f);
+        noiseOffset = new Vector2(Random.Range(0f, 100.0f), Random.Range(0f, 100.0f));
     }
-
+    
+    /// <summary>
+    /// Places the points of progress on the terrain.
+    /// </summary>
     private void SpawnPointsOfInterest()
     {
         // Padding (avoid placing points of interest on the map edges)
@@ -221,18 +260,26 @@ public class LevelGenerator : MonoBehaviour
         GameController.StoneLocationChangedEvent.Invoke(spawnedPointsOfInterest);
     }
 
+    /// <summary>
+    /// Places the terrain details depending on the texture type at the spawn point.
+    /// </summary>
+    /// <remarks>
+    /// Iterates over every pixel in the noise texture, computes the corresponding world position
+    /// and, depending on the color intensity, selects a random prefab from the appropriate list.
+    /// Then tests for collisions (close proximity to other prefabs), randomizes its transform and places it.
+    /// </remarks>
     private void SpawnPrefabsOnNoise()
     {
-        noise_texture = (Texture2D) groundMaterial.GetTexture("_NoiseTexture");
+        noiseTexture = (Texture2D) groundMaterial.GetTexture("_NoiseTexture");
 
-        for (int x = 0; x < noise_texture.width; x++)
+        for (int x = 0; x < noiseTexture.width; x++)
         {
-            for (int y = 0; y < noise_texture.height; y++)
+            for (int y = 0; y < noiseTexture.height; y++)
             {
                 if (ShouldSpawn())
                 {
                     // Normalize to UV coordinates
-                    Vector2 normalizedPos = new Vector2(1 - (float) x / noise_texture.width, 1 - (float) y / noise_texture.height);
+                    Vector2 normalizedPos = new Vector2(1 - (float) x / noiseTexture.width, 1 - (float) y / noiseTexture.height);
 
                     // Current world position
                     Vector3 position = new Vector3(
@@ -241,13 +288,13 @@ public class LevelGenerator : MonoBehaviour
                         (normalizedPos.y - 0.5f) * planeSize.y
                     );
 
-                    // Test collisions with POIs
+                    // Test collisions with points of progress
                     if (CollisionTest(position, spawnedPointsOfInterest, safetyRadiusFactor)) continue;
                     // Test collisions with other detail prefabs
                     if (CollisionTest(position)) continue;
 
                     // Get pixel color
-                    Color color = noise_texture.GetPixel(x, y);
+                    Color color = noiseTexture.GetPixel(x, y);
                 
                     // Choose prefab to spawn based on terrain type (color intensity as determined by blend threshold)
                     GameObject prefab = SelectPrefab(color);
@@ -266,6 +313,10 @@ public class LevelGenerator : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Tests neighboring hash grid cells to determine whether the current object is too close to
+    /// any prefab that was previously placed on the ground.
+    /// </summary>
     private bool CollisionTest(Vector3 position)
     {
         // Determine which cell the given position belongs into
@@ -291,6 +342,11 @@ public class LevelGenerator : MonoBehaviour
         return false;
     }
 
+    /// <summary>
+    /// Determines whether the current object is too close to either object in <paramref name="collection"/>.
+    /// Too close meaning within a disc of radius determined by the objects collider bounds 
+    /// extents multiplied by the given <paramref name="radiusFactor"/> 
+    /// </summary>
     private bool CollisionTest(Vector3 position, List<GameObject> collection, float radiusFactor)
     {
         foreach (var obj in collection)
@@ -299,8 +355,7 @@ public class LevelGenerator : MonoBehaviour
             if (collider == null)
                 continue;
 
-            // Add the safety radius to the objects extent
-            // i.e. half of it's collider's size + safety radius
+            // Half of the collider size
             float objExtent = collider.bounds.extents.magnitude;
 
             // Ignore safety margin if object is small
@@ -315,6 +370,11 @@ public class LevelGenerator : MonoBehaviour
         return false;
     }
 
+    /// <summary>
+    /// Randomize transform properties of a given prefab.
+    /// Scale uniformly and rotate around the y axis.
+    /// </summary>
+    /// <param name="prefab"></param>
     private void RandomizeScaleAndRotation(GameObject prefab)
     {
         float scaleFactor = Random.Range(0.75f, 1.3f);
@@ -328,12 +388,18 @@ public class LevelGenerator : MonoBehaviour
         prefab.transform.rotation = Quaternion.Euler(0, rotationScale, 0);
     }
 
+    /// <summary>
+    /// Random chance that determines whether a terrain detail should be placed.
+    /// </summary>
     private bool ShouldSpawn()
     {
         return Random.value <= detailDensity;
     }
     
-    // Select a random prefab from the appropriate list
+    /// <summary>
+    /// Select a random prefab from the appropriate list based on the given color 
+    /// and the blend threshold.
+    /// </summary>
     private GameObject SelectPrefab (Color color)
     {
         if (color.grayscale > blendThreshold)
@@ -344,6 +410,7 @@ public class LevelGenerator : MonoBehaviour
             return layer1Assets.ElementAt(Random.Range(0, layer1Assets.Count));
         }
     }
+
     private void DebugPrefabPosition(Vector2 planeSize)
     {
         int xCells = Mathf.FloorToInt(planeSize.x / 20) / 2;

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
-public class DetectPlayerFoundStone : MonoBehaviour
+public class PillarController : MonoBehaviour
 {
     private Material dissolveMaterial;
 
