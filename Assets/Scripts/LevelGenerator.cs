@@ -90,8 +90,12 @@ public class LevelGenerator : MonoBehaviour
     [SerializeField] private bool clearPrefabs = false;
     [SerializeField] private bool randomizeNoise = true;
 
+    // Assign point of progress prefab.
+    [SerializeField] private GameObject pointOfProgress;
+    // How many points should be placed
+    [SerializeField] private int pointOfProgressCount = 7;
+    
     // Prefab lists
-    [SerializeField] private List<GameObject> pointsOfInterest = new List<GameObject>();
     [SerializeField] private List<GameObject> layer1Assets = new List<GameObject>();
     [SerializeField] private List<GameObject> layer2Assets = new List<GameObject>();
 
@@ -136,7 +140,7 @@ public class LevelGenerator : MonoBehaviour
         groundMaterial.SetTexture("_NoiseTexture", noiseTexture);
 
         // Spawn prefabs
-        SpawnPointsOfInterest();
+        SpawnPointsOfProgress();
         SpawnPrefabsOnNoise();
 
         // DebugPrefabPosition(planeSize);
@@ -149,7 +153,7 @@ public class LevelGenerator : MonoBehaviour
             Clear();
             noiseTexture = GenerateGroundBlendTexture();
             groundMaterial.SetTexture("_NoiseTexture", noiseTexture);
-            SpawnPointsOfInterest();
+            SpawnPointsOfProgress();
             SpawnPrefabsOnNoise();
             recompute = false;
         }
@@ -230,12 +234,12 @@ public class LevelGenerator : MonoBehaviour
     /// <summary>
     /// Places the points of progress on the terrain.
     /// </summary>
-    private void SpawnPointsOfInterest()
+    private void SpawnPointsOfProgress()
     {
         // Padding (avoid placing points of interest on the map edges)
         Vector2 paddedPlaneSize = planeSize * 0.85f;
 
-        foreach (var obj in pointsOfInterest)
+        for (int i = 0; i < pointOfProgressCount; i++)
         {
             bool canSpawn = false;
             int retries = 100;
@@ -253,7 +257,7 @@ public class LevelGenerator : MonoBehaviour
             }
 
             if (canSpawn)
-                spawnedPointsOfInterest.Add(Instantiate(obj, position, Quaternion.identity));
+                spawnedPointsOfInterest.Add(Instantiate(pointOfProgress, position, Quaternion.identity));
         }
 
         // Notify gameController of stone positions
