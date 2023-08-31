@@ -4,6 +4,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
 
+[RequireComponent(typeof(Collider))]
 public class EnemyBehavior : MonoBehaviour
 {
     private enum EnemyState { Despawned, Despawning, Inactive, Patrolling, Chasing, Evade, Stopped }
@@ -66,6 +67,19 @@ public class EnemyBehavior : MonoBehaviour
     {
         GameController.GameProgressedEvent.RemoveListener(OnGameProgressed);
         GameController.StoneLocationChangedEvent.RemoveListener(OnStoneLocationsChanged);
+    }
+
+    /// <summary>
+    /// Tests whether the player has entered the enemy's trigger collider.
+    /// Invokes a game event to signal the player's death if necessary.
+    /// </summary>
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            Debug.Log("Player killed!");
+            GameController.PlayerDied.Invoke();
+        }
     }
 
     /// <summary>

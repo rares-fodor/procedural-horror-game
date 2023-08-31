@@ -41,19 +41,6 @@ public class PlayerController : MonoBehaviour
     }
 
     /// <summary>
-    /// Tests whether the enemy has entered the players trigger collider.
-    /// Invokes a game event to signal the player's death if necessary.
-    /// </summary>
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Enemy"))
-        {
-            Debug.Log("Player dead!");
-            GameController.PlayerDied.Invoke();
-        }
-    }
-
-    /// <summary>
     /// Detects if the user is freelooking.
     /// </summary>
     /// <remarks>
