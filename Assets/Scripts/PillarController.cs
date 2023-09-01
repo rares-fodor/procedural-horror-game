@@ -8,13 +8,15 @@ public class PillarController : MonoBehaviour
 {
     private Material dissolveMaterial;
 
+    [SerializeField] private float timeToCollect = 5f;
+
     // Toggled by the trigger callbacks
     public bool playerInTrigger { get; private set; } = false ;
 
     // Time since interact button was pressed
     private float collectionTimer = 0f;
 
-    [SerializeField] private float timeToCollect = 5f;
+    private bool interacted = false;
 
 
     private void OnTriggerEnter(Collider other)
@@ -23,7 +25,7 @@ public class PillarController : MonoBehaviour
         {
             Debug.Log("Player found a stone!");
             playerInTrigger = true;
-            GameController.PlayerInteractibleTrigger.Invoke();
+            GameController.PlayerInteractableTriggerToggle.Invoke(Consts.INTERACT_MESSAGE);
         }
     }
 
@@ -33,7 +35,9 @@ public class PillarController : MonoBehaviour
         {
             Debug.Log("Player left trigger!");
             playerInTrigger = false;
-            GameController.PlayerInteractibleTrigger.Invoke();
+            
+            if (!Interacted())
+                GameController.PlayerInteractableTriggerToggle.Invoke(Consts.EMPTY_STR);
         }
     }
 
@@ -72,6 +76,10 @@ public class PillarController : MonoBehaviour
             AdvanceVanishEffect();
         }
     }
+    public bool Interacted()
+    {
+        return interacted;
+    }
 
     /// <summary>
     /// Modify the alpha clipping threshold over time
@@ -93,8 +101,10 @@ public class PillarController : MonoBehaviour
         GameController.GameProgressedEvent.Invoke();
 
         // Invoke player trigger event to prevent UI elements from remaining active
-        GameController.PlayerInteractibleTrigger.Invoke();
+        GameController.PlayerInteractableTriggerToggle.Invoke(Consts.INTERACT_MESSAGE);
+        interacted = true;
 
         gameObject.SetActive(false);
     }
+
 }
