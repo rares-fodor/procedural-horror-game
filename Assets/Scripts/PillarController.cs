@@ -23,7 +23,7 @@ public class PillarController : MonoBehaviour
         {
             Debug.Log("Player found a stone!");
             playerInTrigger = true;
-            GameController.PlayerTriggerToggle.Invoke();
+            GameController.PlayerInteractibleTrigger.Invoke();
         }
     }
 
@@ -33,7 +33,7 @@ public class PillarController : MonoBehaviour
         {
             Debug.Log("Player left trigger!");
             playerInTrigger = false;
-            GameController.PlayerTriggerToggle.Invoke();
+            GameController.PlayerInteractibleTrigger.Invoke();
         }
     }
 
@@ -93,7 +93,7 @@ public class PillarController : MonoBehaviour
         GameController.GameProgressedEvent.Invoke();
 
         // Invoke player trigger event to prevent UI elements from remaining active
-        GameController.PlayerTriggerToggle.Invoke();
+        GameController.PlayerInteractibleTrigger.Invoke();
 
         gameObject.SetActive(false);
     }

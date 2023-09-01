@@ -48,6 +48,9 @@ public class EnemyBehavior : MonoBehaviour
     // Set to true to allow hunting
     private bool randomHuntsEnabled = false;
 
+    // Set to true to disable detection when player is in safe zone
+    private bool playerInSafeZone = false;
+
     // Set to false after progressing to hunt stage
     private bool shouldDespawn = true;
 
@@ -61,12 +64,14 @@ public class EnemyBehavior : MonoBehaviour
         agentSpeed = enemyAgent.speed;
         GameController.GameProgressedEvent.AddListener(OnGameProgressed);
         GameController.StoneLocationChangedEvent.AddListener(OnStoneLocationsChanged);
+        GameController.PlayerSafeZoneToggle.AddListener(OnPlayerInSafeZone);
     }
 
     private void OnDestroy()
     {
         GameController.GameProgressedEvent.RemoveListener(OnGameProgressed);
         GameController.StoneLocationChangedEvent.RemoveListener(OnStoneLocationsChanged);
+        GameController.PlayerSafeZoneToggle.RemoveListener(OnPlayerInSafeZone);
     }
 
     /// <summary>
@@ -87,14 +92,17 @@ public class EnemyBehavior : MonoBehaviour
     /// </summary>
     private void Update()
     {
-        if (enemyAgent.enabled == true)
+        if (!playerInSafeZone)
         {
-            CheckPlayerInRange();
-        }
+            if (enemyAgent.enabled == true)
+            {
+                CheckPlayerInRange();
+            }
 
-        if (randomHuntsEnabled && (enemyState == EnemyState.Despawned || enemyState == EnemyState.Patrolling))
-        {
-            AttemptHunt();
+            if (randomHuntsEnabled && (enemyState == EnemyState.Despawned || enemyState == EnemyState.Patrolling))
+            {
+                AttemptHunt();
+            }
         }
 
         switch (enemyState)
@@ -142,7 +150,7 @@ public class EnemyBehavior : MonoBehaviour
         else if (gameProgress >= 2 && gameProgress < 4)
         {
             // If enemy is chasing wait for succesful evade to warp to next stone for patrol
-            if (enemyState != EnemyState.Patrolling)
+            if (enemyState != EnemyState.Patrolling && enemyState != EnemyState.Despawned)
             {
                 progressedInChase = true;
             } else
@@ -174,6 +182,18 @@ public class EnemyBehavior : MonoBehaviour
     private void OnStoneLocationsChanged(List<GameObject> stones)
     {
         this.stones = stones;
+    }
+
+    private void OnPlayerInSafeZone()
+    {
+        // Toggle a boolean to indicate player is in safe zone
+        // on true disable detection and go to evade
+        playerInSafeZone = !playerInSafeZone;
+        if (playerInSafeZone && (enemyState == EnemyState.Chasing))
+        {
+            ChangeState(EnemyState.Evade);
+        }
+        
     }
 
     /// <summary>

@@ -10,7 +10,7 @@ public class ToggleUIElement : MonoBehaviour
 
     private void Awake()
     {
-        GameController.PlayerTriggerToggle.AddListener(OnPlayerToggleTrigger);
+        GameController.PlayerInteractibleTrigger.AddListener(OnPlayerToggleTrigger);
     }
 
     private void Update()
