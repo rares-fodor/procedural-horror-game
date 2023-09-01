@@ -1,7 +1,5 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.VisualScripting.Antlr3.Runtime.Tree;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -90,6 +88,9 @@ public class LevelGenerator : MonoBehaviour
     [SerializeField] private bool clearPrefabs = false;
     [SerializeField] private bool randomizeNoise = true;
 
+    // Safe zone prefab
+    [SerializeField] private GameObject safeZone;
+
     // Assign point of progress prefab.
     [SerializeField] private GameObject pointOfProgress;
     // How many points should be placed
@@ -120,6 +121,7 @@ public class LevelGenerator : MonoBehaviour
     // Track prefabs
     private List<GameObject> spawnedPrefabs = new List<GameObject>();
     private List<GameObject> spawnedPointsOfInterest = new List<GameObject>();
+    private GameObject spawnedSafeZone;
 
     // Map prefabs into spatial cells
     private HashGrid hashGrid;
@@ -140,6 +142,7 @@ public class LevelGenerator : MonoBehaviour
         groundMaterial.SetTexture("_NoiseTexture", noiseTexture);
 
         // Spawn prefabs
+        SpawnSafeZone();
         SpawnPointsOfProgress();
         SpawnPrefabsOnNoise();
 
@@ -231,6 +234,12 @@ public class LevelGenerator : MonoBehaviour
         noiseOffset = new Vector2(Random.Range(0f, 100.0f), Random.Range(0f, 100.0f));
     }
     
+    private void SpawnSafeZone()
+    {
+        // Place safe zone at world origin
+        spawnedSafeZone = Instantiate(safeZone, new Vector3(0, 0, 0), Quaternion.identity);
+    }
+
     /// <summary>
     /// Places the points of progress on the terrain.
     /// </summary>
@@ -252,7 +261,8 @@ public class LevelGenerator : MonoBehaviour
                     0,
                     Random.Range(-paddedPlaneSize.y / 2, paddedPlaneSize.y / 2)
                 );
-                canSpawn = !CollisionTest(position, spawnedPointsOfInterest, spreadFactor);
+                canSpawn = !CollisionTest(position, spawnedPointsOfInterest, spreadFactor)
+                    && !CollisionTest(position, spawnedSafeZone, 1.0f);
                 retries--;
             }
 
@@ -292,6 +302,8 @@ public class LevelGenerator : MonoBehaviour
                         (normalizedPos.y - 0.5f) * planeSize.y
                     );
 
+                    // Test collision with the safe zone
+                    if (CollisionTest(position, spawnedSafeZone, 1.0f)) continue;
                     // Test collisions with points of progress
                     if (CollisionTest(position, spawnedPointsOfInterest, safetyRadiusFactor)) continue;
                     // Test collisions with other detail prefabs
@@ -347,28 +359,39 @@ public class LevelGenerator : MonoBehaviour
     }
 
     /// <summary>
-    /// Determines whether the current object is too close to either object in <paramref name="collection"/>.
-    /// Too close meaning within a disc of radius determined by the objects collider bounds 
+    /// Determines whether <paramref name="position"/> is too close to <paramref name="obj"/>.
+    /// Too close meaning within a disc of radius equal to the object's collider bounds 
     /// extents multiplied by the given <paramref name="radiusFactor"/> 
+    /// </summary>
+    private bool CollisionTest(Vector3 position, GameObject obj, float radiusFactor)
+    {
+        Collider collider = obj.GetComponent<Collider>();
+
+        // Half of the collider size
+        float objExtent = collider.bounds.extents.magnitude;
+
+        // Ignore safety margin if object is small
+        if (objExtent < 10.0f)
+        {
+            radiusFactor = 1;
+        }
+
+        if (Vector3.Distance(position, obj.transform.position) < (objExtent * radiusFactor))
+            return true;
+
+        return false;
+    }
+
+    /// <summary>
+    /// Determines whether <paramref name="position"/> is too close to either object in <paramref name="collection"/>.
+    /// Too close meaning within a disc of radius equal to the object's collider bounds 
+    /// extents multiplied by the given <paramref name="radiusFactor"/>
     /// </summary>
     private bool CollisionTest(Vector3 position, List<GameObject> collection, float radiusFactor)
     {
         foreach (var obj in collection)
         {
-            Collider collider = obj.GetComponent<Collider>();
-            if (collider == null)
-                continue;
-
-            // Half of the collider size
-            float objExtent = collider.bounds.extents.magnitude;
-
-            // Ignore safety margin if object is small
-            if (objExtent < 10.0f)
-            {
-                radiusFactor = 1;
-            }
-
-            if (Vector3.Distance(position, obj.transform.position) < (objExtent * radiusFactor))
+            if (CollisionTest(position, obj, radiusFactor))
                 return true;
         }
         return false;
