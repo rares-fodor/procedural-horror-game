@@ -15,4 +15,9 @@ public static class Consts
     public static string NPC_NAME = "Mysterious Wizard";
 
     public static KeyCode SKIP_DIALOGUE_LINE_KEY = KeyCode.Space;
+
+    public static KeyCode TELEPORT_KEY = KeyCode.T;
+    public static KeyCode HINT_KEY = KeyCode.F;
+
+    public static int PILLAR_COUNT = 7;
 }

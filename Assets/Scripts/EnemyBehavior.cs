@@ -14,9 +14,6 @@ public class EnemyBehavior : MonoBehaviour
 
     // Game progress counter
     private int gameProgress;
-
-    // References to points of progress
-    private List<GameObject> stones;
     
     // Last spawn target
     private Vector3 spawnPoint;
@@ -63,14 +60,12 @@ public class EnemyBehavior : MonoBehaviour
         gameProgress = 0;
         agentSpeed = enemyAgent.speed;
         GameController.GameProgressedEvent.AddListener(OnGameProgressed);
-        GameController.StoneLocationChangedEvent.AddListener(OnStoneLocationsChanged);
         GameController.PlayerSafeZoneToggle.AddListener(OnPlayerInSafeZone);
     }
 
     private void OnDestroy()
     {
         GameController.GameProgressedEvent.RemoveListener(OnGameProgressed);
-        GameController.StoneLocationChangedEvent.RemoveListener(OnStoneLocationsChanged);
         GameController.PlayerSafeZoneToggle.RemoveListener(OnPlayerInSafeZone);
     }
 
@@ -136,9 +131,6 @@ public class EnemyBehavior : MonoBehaviour
         Debug.Log("Game progressed");
         gameProgress++;
 
-        // Remove closest stone (it was collected since the game progressed)
-        stones.Remove(GetClosestStone(player.transform.position));
-
         // Begin enemy activity
         if (gameProgress == 1)
         {
@@ -172,16 +164,6 @@ public class EnemyBehavior : MonoBehaviour
             huntChance = 1.0f;
             huntDuration = 5000f;
         }
-    }
-
-    /// <summary>
-    /// Updates a local copy of the list of references to points of progress.
-    /// Gets invoked after the level generator is done placing them on the map
-    /// </summary>
-    /// <param name="stones">The game's units of progress (player finds and collects them)</param>
-    private void OnStoneLocationsChanged(List<GameObject> stones)
-    {
-        this.stones = stones;
     }
 
     private void OnPlayerInSafeZone()
@@ -438,7 +420,7 @@ public class EnemyBehavior : MonoBehaviour
     {
         if (enemyAgent != null)
         {
-            GameObject closestStone = GetClosestStone(player.transform.position);
+            GameObject closestStone = GameController.GetClosestObject(player.transform.position);
             if (closestStone != null)
             {
                 Vector3 target = GetRandomPoint(closestStone.transform.position);
@@ -574,32 +556,5 @@ public class EnemyBehavior : MonoBehaviour
     private float DistanceToPlayer()
     {
         return Vector3.Distance(player.transform.position, gameObject.transform.position);
-    }
-
-    /// <summary>
-    /// Returns a reference to the closest point of progress to the player
-    /// </summary>
-    /// <param name="target"></param>
-    /// <returns></returns>
-    private GameObject GetClosestStone(Vector3 target)
-    {
-        if (stones != null && stones.Count > 0)
-        {
-            GameObject closest = stones[0];
-            float leastDistance = Vector3.Distance(stones[0].transform.position, target);
-
-            for (int i = 1; i < stones.Count; i++)
-            {
-                float currentDistance = Vector3.Distance(stones[i].transform.position, target);
-                if (currentDistance < leastDistance)
-                {
-                    leastDistance = currentDistance;
-                    closest = stones[i];
-                }
-            }
-
-            return closest;
-        }
-        return null;
     }
 }

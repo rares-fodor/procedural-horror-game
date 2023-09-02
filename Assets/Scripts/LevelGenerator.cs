@@ -94,7 +94,7 @@ public class LevelGenerator : MonoBehaviour
     // Assign point of progress prefab.
     [SerializeField] private GameObject pointOfProgress;
     // How many points should be placed
-    [SerializeField] private int pointOfProgressCount = 7;
+    [SerializeField] private int pointOfProgressCount = Consts.PILLAR_COUNT;
     
     // Prefab lists
     [SerializeField] private List<GameObject> layer1Assets = new List<GameObject>();
@@ -120,7 +120,7 @@ public class LevelGenerator : MonoBehaviour
 
     // Track prefabs
     private List<GameObject> spawnedPrefabs = new List<GameObject>();
-    private List<GameObject> spawnedPointsOfInterest = new List<GameObject>();
+    private List<GameObject> spawnedPillars = new List<GameObject>();
     private GameObject spawnedSafeZone;
 
     // Map prefabs into spatial cells
@@ -178,12 +178,12 @@ public class LevelGenerator : MonoBehaviour
         {
             DestroyImmediate(obj);
         }
-        foreach (var obj in spawnedPointsOfInterest)
+        foreach (var obj in spawnedPillars)
         { 
             DestroyImmediate(obj);
         }
         spawnedPrefabs.Clear();
-        spawnedPointsOfInterest.Clear();
+        spawnedPillars.Clear();
     }
 
     /// <summary>
@@ -261,17 +261,17 @@ public class LevelGenerator : MonoBehaviour
                     0,
                     Random.Range(-paddedPlaneSize.y / 2, paddedPlaneSize.y / 2)
                 );
-                canSpawn = !CollisionTest(position, spawnedPointsOfInterest, spreadFactor)
+                canSpawn = !CollisionTest(position, spawnedPillars, spreadFactor)
                     && !CollisionTest(position, spawnedSafeZone, 1.0f);
                 retries--;
             }
 
             if (canSpawn)
-                spawnedPointsOfInterest.Add(Instantiate(pointOfProgress, position, Quaternion.identity));
+                spawnedPillars.Add(Instantiate(pointOfProgress, position, Quaternion.identity));
         }
 
-        // Notify gameController of stone positions
-        GameController.StoneLocationChangedEvent.Invoke(spawnedPointsOfInterest);
+        // Update GameController stone reference list
+        GameController.SetPillarList(spawnedPillars);
     }
 
     /// <summary>
@@ -305,7 +305,7 @@ public class LevelGenerator : MonoBehaviour
                     // Test collision with the safe zone
                     if (CollisionTest(position, spawnedSafeZone, 1.0f)) continue;
                     // Test collisions with points of progress
-                    if (CollisionTest(position, spawnedPointsOfInterest, safetyRadiusFactor)) continue;
+                    if (CollisionTest(position, spawnedPillars, safetyRadiusFactor)) continue;
                     // Test collisions with other detail prefabs
                     if (CollisionTest(position)) continue;
 

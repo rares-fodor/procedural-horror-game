@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TreeEditor;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -9,6 +10,21 @@ public class PlayerController : MonoBehaviour
 {
     [SerializeField] private float speed;
     [SerializeField] private Camera mainCamera;
+    [SerializeField] private GameObject indicator;
+
+    private GameObject indicatorInstance;
+
+    public int remainingHints = 0;
+    private bool indicatorVisible = false;
+
+    private Vector3 hintTarget;
+
+
+    private void Awake()
+    {
+        indicatorInstance = Instantiate(indicator, new Vector3(0,0,0), Quaternion.identity);
+        indicatorInstance.SetActive(false);
+    }
 
     private void Start()
     {
@@ -18,7 +34,22 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         HandleMovement();
+
+        // TODO
+        TeleportToNPC();
+
+        if (remainingHints > 0)
+        {
+            if (Input.GetKey(Consts.HINT_KEY) && !indicatorVisible)
+            {
+                EnableHint();
+                remainingHints--;
+            }
+            if (indicatorVisible)
+                UpdateHintPosition();
+        }
     }
+
 
     /// <summary>
     /// Updates the player transform to reflect its movement
@@ -84,5 +115,42 @@ public class PlayerController : MonoBehaviour
 
         Vector3 direction = (forwardRelative + rightRelative).normalized;
         transform.position += direction * speed * Time.deltaTime;
+    }
+
+    private void TeleportToNPC()
+    {
+        if (Input.GetKey(Consts.TELEPORT_KEY))
+        {
+            transform.position = new Vector3(0, transform.position.y, 0);
+        }
+    }
+
+    private void EnableHint()
+    {
+        GameObject closest = GameController.GetClosestObject(transform.position);
+        if (closest != null)
+        {
+            hintTarget = closest.transform.position;
+            indicatorInstance.SetActive(true);
+            indicatorVisible = true;
+            StartCoroutine(ExpireHint());
+        }
+    }
+
+    private void UpdateHintPosition()
+    {
+        Vector3 direction = hintTarget - transform.position;
+        Vector3 pos = transform.position + direction.normalized * 2.0f;
+        indicatorInstance.transform.position = pos;
+    }
+
+    private IEnumerator ExpireHint()
+    {
+        yield return new WaitForSeconds(2);
+        if (indicatorVisible)
+        {
+            indicatorVisible = false;
+            indicatorInstance.SetActive(false);
+        }
     }
 }

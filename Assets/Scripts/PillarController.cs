@@ -70,11 +70,13 @@ public class PillarController : Interactable
     /// </summary>
     private void CollectItem()
     {
-        // Tell game controller that a stone was found
+        // Remove pillar from global list
+        GameController.RemovePillar(gameObject);
+        gameObject.SetActive(false);
+        
+        // Notify that a pillar has been collected and the game progressed.
         GameController.GameProgressedEvent.Invoke();
 
         DisableInteractMessage();
-        gameObject.SetActive(false);
     }
-
 }
