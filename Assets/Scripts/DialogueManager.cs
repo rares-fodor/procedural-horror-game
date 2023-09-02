@@ -40,7 +40,10 @@ public class DialogueManager : MonoBehaviour
     void NextSentence()
     {
         if (sentenceIndex > dialogue.sentences.Length - 1)
+        {
             active = false;
+            GameController.DialogueFinished.Invoke();
+        }
         else
             dialogueBody.text = dialogue.sentences[sentenceIndex++];
     }

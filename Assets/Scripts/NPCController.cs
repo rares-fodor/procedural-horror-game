@@ -1,53 +1,61 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
-public class NPCController : MonoBehaviour
+public class NPCController : Interactable
 {
     [SerializeField] private GameObject player;
     [SerializeField] Dialogue dialogue;
 
-    // Toggled by the trigger callbacks
-    private bool playerInRange = false;
+    private bool dialogueFinished = true;
 
-    private bool interacted = false;
 
-    private void OnTriggerEnter(Collider other)
+    public NPCController() : base(Consts.DIALOGUE_MESSAGE) {}
+
+
+    protected override void OnTriggerExit(Collider other)
     {
-        if (other.CompareTag("Player"))
+        base.OnTriggerExit(other);
+        if (!dialogueFinished)
         {
-            playerInRange = true;
-            GameController.PlayerInteractableTriggerToggle.Invoke(Consts.DIALOGUE_MESSAGE);
+            // Cancel dialogue
+            GameController.DialogueStarted.Invoke(Consts.NPC_NAME, dialogue);
+            dialogueFinished = true;
         }
     }
 
-    private void OnTriggerExit(Collider other)
+    private void Awake()
     {
-        if (other.CompareTag("Player"))
-        {
-            // Only invoke if player hasn't interacted with the object
-            if (!interacted)
-            {
-                playerInRange = false;
-                GameController.PlayerInteractableTriggerToggle.Invoke(Consts.DIALOGUE_MESSAGE);
-            }
-        }
+        GameController.DialogueFinished.AddListener(OnDialogueFinished);
+    }
+
+    private void OnDialogueFinished()
+    {
+        dialogueFinished = true;
+        EnableInteractMessage();
     }
 
     private void Update()
     {
-        if (playerInRange)
+        if (playerInTrigger)
         {
             FacePlayer();
-            if (Input.GetKeyDown(Consts.INTERACT_KEY))
-            {
-                interacted = true;
-                GameController.PlayerInteractableTriggerToggle.Invoke(Consts.EMPTY_STR);
-                Debug.Log($"Dialogue started! {Consts.NPC_NAME} {dialogue}");
-                GameController.DialogueStarted.Invoke(Consts.NPC_NAME, dialogue);
-            }
+            if (Input.GetKeyDown(Consts.INTERACT_KEY) && dialogueFinished) 
+                StartDialogue();
         }
+    }
+    
+    /// <summary>
+    /// Invokes the dialogue message toggle and disables the dialogueFinished flag
+    /// and the interact message.
+    /// </summary>
+    void StartDialogue()
+    {
+        GameController.DialogueStarted.Invoke(Consts.NPC_NAME, dialogue);
+        dialogueFinished = false;
+        DisableInteractMessage();
     }
 
     /// <summary>

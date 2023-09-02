@@ -9,7 +9,7 @@ public static class Consts
     public static string MAIN_GAME_SCENE = "SampleScene";
 
     public static KeyCode INTERACT_KEY = KeyCode.E;
-    public static string INTERACT_MESSAGE = "Press " + INTERACT_KEY + " to interact";
+    public static string INTERACT_MESSAGE = "Hold " + INTERACT_KEY + " to collect";
     public static string DIALOGUE_MESSAGE = "Press " + INTERACT_KEY + " to talk";
 
     public static string NPC_NAME = "Mysterious Wizard";

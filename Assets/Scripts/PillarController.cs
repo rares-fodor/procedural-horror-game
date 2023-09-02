@@ -4,42 +4,19 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
-public class PillarController : MonoBehaviour
+public class PillarController : Interactable
 {
-    private Material dissolveMaterial;
 
     [SerializeField] private float timeToCollect = 5f;
 
-    // Toggled by the trigger callbacks
-    public bool playerInTrigger { get; private set; } = false ;
+    private Material dissolveMaterial;
 
     // Time since interact button was pressed
     private float collectionTimer = 0f;
 
-    private bool interacted = false;
 
-
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Player"))
-        {
-            Debug.Log("Player found a stone!");
-            playerInTrigger = true;
-            GameController.PlayerInteractableTriggerToggle.Invoke(Consts.INTERACT_MESSAGE);
-        }
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        if (other.CompareTag("Player"))
-        {
-            Debug.Log("Player left trigger!");
-            playerInTrigger = false;
-            
-            if (!Interacted())
-                GameController.PlayerInteractableTriggerToggle.Invoke(Consts.EMPTY_STR);
-        }
-    }
+    public PillarController() : base(Consts.INTERACT_MESSAGE) { }
+ 
 
     private void Start()
     {
@@ -76,10 +53,6 @@ public class PillarController : MonoBehaviour
             AdvanceVanishEffect();
         }
     }
-    public bool Interacted()
-    {
-        return interacted;
-    }
 
     /// <summary>
     /// Modify the alpha clipping threshold over time
@@ -93,17 +66,14 @@ public class PillarController : MonoBehaviour
     }
 
     /// <summary>
-    /// Invoke the game progress event and disable current instance.
+    /// Invoke the game progress event and disable instance.
     /// </summary>
     private void CollectItem()
     {
         // Tell game controller that a stone was found
         GameController.GameProgressedEvent.Invoke();
 
-        // Invoke player trigger event to prevent UI elements from remaining active
-        GameController.PlayerInteractableTriggerToggle.Invoke(Consts.INTERACT_MESSAGE);
-        interacted = true;
-
+        DisableInteractMessage();
         gameObject.SetActive(false);
     }
 

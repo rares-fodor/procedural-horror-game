@@ -12,4 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a9a4e038f09a4a048a728ae961552c83, type: 3}
   m_Name: NPC1
   m_EditorClassIdentifier: 
-  sentences: []
+  sentences:
+  - Hello there!
+  - You may wonder why you're here.
+  - I don't know either.
