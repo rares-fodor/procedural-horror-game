@@ -262,12 +262,15 @@ public class LevelGenerator : MonoBehaviour
                     Random.Range(-paddedPlaneSize.y / 2, paddedPlaneSize.y / 2)
                 );
                 canSpawn = !CollisionTest(position, spawnedPillars, spreadFactor)
-                    && !CollisionTest(position, spawnedSafeZone, 1.0f);
+                    && !ProximityTest(position, spawnedSafeZone, 1.0f);
                 retries--;
             }
 
             if (canSpawn)
-                spawnedPillars.Add(Instantiate(pointOfProgress, position, Quaternion.identity));
+            {
+                GameObject newPillar = Instantiate(pointOfProgress, position, Quaternion.identity);
+                spawnedPillars.Add(newPillar);
+            }
         }
 
         // Update GameController stone reference list
@@ -303,11 +306,11 @@ public class LevelGenerator : MonoBehaviour
                     );
 
                     // Test collision with the safe zone
-                    if (CollisionTest(position, spawnedSafeZone, 1.0f)) continue;
+                    if (ProximityTest(position, spawnedSafeZone, 1.0f)) continue;
                     // Test collisions with points of progress
                     if (CollisionTest(position, spawnedPillars, safetyRadiusFactor)) continue;
                     // Test collisions with other detail prefabs
-                    if (CollisionTest(position)) continue;
+                    if (HashgridNeighborsCollisionTest(position)) continue;
 
                     // Get pixel color
                     Color color = noiseTexture.GetPixel(x, y);
@@ -333,13 +336,11 @@ public class LevelGenerator : MonoBehaviour
     /// Tests neighboring hash grid cells to determine whether the current object is too close to
     /// any prefab that was previously placed on the ground.
     /// </summary>
-    private bool CollisionTest(Vector3 position)
+    private bool HashgridNeighborsCollisionTest(Vector3 position)
     {
         // Determine which cell the given position belongs into
         Vector2Int cell = hashGrid.GetCell(position);
 
-        // Look for collisions in all neighboring cells
-        // Particularly useful for objects that are located on the edges of a cell
         for (int i = -1; i <= 1; i++)
         {
             for (int j = -1; j <= 1; j++)
@@ -363,15 +364,15 @@ public class LevelGenerator : MonoBehaviour
     /// Too close meaning within a disc of radius equal to the object's collider bounds 
     /// extents multiplied by the given <paramref name="radiusFactor"/> 
     /// </summary>
-    private bool CollisionTest(Vector3 position, GameObject obj, float radiusFactor)
+    private bool ProximityTest(Vector3 position, GameObject obj, float radiusFactor)
     {
         Collider collider = obj.GetComponent<Collider>();
 
         // Half of the collider size
         float objExtent = collider.bounds.extents.magnitude;
 
-        // Ignore safety margin if object is small
-        if (objExtent < 10.0f)
+        // Ignore safety margin if object is not a pillar
+        if (!obj.CompareTag("Pillar"))
         {
             radiusFactor = 1;
         }
@@ -391,7 +392,7 @@ public class LevelGenerator : MonoBehaviour
     {
         foreach (var obj in collection)
         {
-            if (CollisionTest(position, obj, radiusFactor))
+            if (ProximityTest(position, obj, radiusFactor))
                 return true;
         }
         return false;

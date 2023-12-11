@@ -41,7 +41,7 @@ public class NPCController : Interactable
     {
         if (playerInTrigger)
         {
-            FacePlayer();
+            //FacePlayer();
             if (Input.GetKeyDown(Consts.INTERACT_KEY) && dialogueFinished) 
                 StartDialogue();
         }
