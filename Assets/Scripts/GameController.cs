@@ -1,10 +1,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using Unity.Mathematics;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class GameController : MonoBehaviour
+public class GameController : NetworkBehaviour
 {
     // Game
     [HideInInspector] public static UnityEvent GameProgressedEvent = new UnityEvent();
@@ -21,11 +24,42 @@ public class GameController : MonoBehaviour
     // NPC
     [HideInInspector] public static UnityEvent<GameObject> NPCLocationChangedEvent = new UnityEvent<GameObject>();
 
-
-    [SerializeField] private GameObject player;
-
     private static List<GameObject> pillars;
+    public static GameObject LocalPlayer;
 
+    private NetworkVariable<int> playersAlive = new NetworkVariable<int>();
+
+    // Holds references for all canvas elements
+    private UIController UIController;
+
+    public void Awake()
+    {
+        UIController = FindObjectOfType<UIController>();
+        // TODO might need to be removed
+        if (!IsServer) { return; }
+        playersAlive.Value = FindObjectsOfType<PlayerController>().Count();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        playersAlive.OnValueChanged += PlayerKilledCallback;
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        playersAlive.OnValueChanged -= PlayerKilledCallback;
+    }
+
+    private void PlayerKilledCallback(int prev, int current)
+    {
+        // TODO Update HUD to reflect players' status
+        Debug.Log($"{current} players remaining");
+        UIController.gameOverScreen.GameOver("All players killed! Game over!");
+        if (playersAlive.Value == 0)
+        {
+            Debug.Log("All players killed");
+        }
+    }
 
     public static void RemovePillar(GameObject reference)
     {
@@ -57,5 +91,11 @@ public class GameController : MonoBehaviour
             return closest;
         }
         return null;
+    }
+
+    public void NotifyPlayerKilled()
+    {
+        if (!IsServer) { return; }
+        playersAlive.Value -= 1;
     }
 }

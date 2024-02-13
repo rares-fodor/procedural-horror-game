@@ -39,7 +39,7 @@ public class NPCController : Interactable
 
     private void Update()
     {
-        if (playerInTrigger)
+        if (playersInTrigger.Count > 0)
         {
             //FacePlayer();
             if (Input.GetKeyDown(Consts.INTERACT_KEY) && dialogueFinished) 

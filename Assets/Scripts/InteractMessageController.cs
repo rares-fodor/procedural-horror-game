@@ -8,7 +8,7 @@ public class InteractMessageController : MonoBehaviour
     [SerializeField] private GameObject UIContainer;
     [SerializeField] private TMP_Text interactMessage;
 
-    private bool active = false;
+    [SerializeField] private bool visible = false;
 
     private void Awake()
     {
@@ -17,12 +17,12 @@ public class InteractMessageController : MonoBehaviour
 
     private void Update()
     {
-        UIContainer.SetActive(active);
+        UIContainer.SetActive(visible);
     }
 
     void OnPlayerToggleTrigger(string message)
     {
-        active = !active;
+        visible = !visible;
         interactMessage.text = message;
     }
 }

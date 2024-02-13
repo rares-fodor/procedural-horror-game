@@ -20,4 +20,5 @@ public static class Consts
     public static KeyCode HINT_KEY = KeyCode.F;
 
     public static int PILLAR_COUNT = 7;
+    public static int MAX_PLAYER_COUNT = 4;
 }

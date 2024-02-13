@@ -14,6 +14,7 @@ public class ProgressCounterLogic : MonoBehaviour
 
     private void OnGameProgressed()
     {
+        Debug.Log("[DEBUG] Game progressed");
         progress++;
         progressCounterText.text = $"{progress} / {Consts.PILLAR_COUNT}";
     }

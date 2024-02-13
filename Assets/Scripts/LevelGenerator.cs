@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -72,7 +74,7 @@ class HashGrid
 }
 
 
-public class LevelGenerator : MonoBehaviour
+public class LevelGenerator : NetworkBehaviour
 {
     // Material into which to feed the noise texture
     [SerializeField] Material groundMaterial;
@@ -128,14 +130,26 @@ public class LevelGenerator : MonoBehaviour
 
     private Vector2 planeSize;
 
+    private NetworkVariable<int> seed = new NetworkVariable<int>();
 
-    void Start()
+    public static Vector3 planeExtents;
+
+    public override void OnNetworkSpawn()
     {
+        base.OnNetworkSpawn();
+        if (IsServer)
+        {
+            // Set seed, any clients joining will see this value and generate their levels accordingly.
+            seed.Value = (int) System.DateTime.Now.Ticks;
+        }
+
+        Random.InitState(seed.Value);
+
         MeshRenderer mr = gameObject.GetComponent<MeshRenderer>();
         planeSize = new Vector2(mr.bounds.size.x, mr.bounds.size.z);
 
         hashGrid = new HashGrid(planeSize);
-        
+
         // Generate noise texture
         noiseTexture = GenerateGroundBlendTexture();
         // Pass noise texture to ground mix shader
@@ -143,10 +157,23 @@ public class LevelGenerator : MonoBehaviour
 
         // Spawn prefabs
         SpawnSafeZone();
-        SpawnPointsOfProgress();
+        if (IsServer)
+        { 
+            SpawnPointsOfProgress();
+        }
+        else
+        {
+            // If client, find all the pillars that were spawned by the network manager and pass them to the controller (needed for hints)
+            var pillars = FindObjectsOfType<PillarController>();
+            var pillarObjects = pillars.Select(p => p.gameObject).ToList();
+            GameController.SetPillarList(pillarObjects);
+        }
         SpawnPrefabsOnNoise();
+    }
 
-        // DebugPrefabPosition(planeSize);
+    void Awake()
+    {
+        planeExtents = GetComponent<MeshRenderer>().bounds.extents;
     }
 
     private void Update()
@@ -269,6 +296,7 @@ public class LevelGenerator : MonoBehaviour
             if (canSpawn)
             {
                 GameObject newPillar = Instantiate(pointOfProgress, position, Quaternion.identity);
+                if (IsServer) { newPillar.GetComponent<NetworkObject>().Spawn(); }
                 spawnedPillars.Add(newPillar);
             }
         }

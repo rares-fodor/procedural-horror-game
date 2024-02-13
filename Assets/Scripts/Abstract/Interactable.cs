@@ -1,12 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
-public abstract class Interactable : MonoBehaviour
+public abstract class Interactable : NetworkBehaviour
 {
-    protected bool playerInTrigger;
     private bool active = false;
     protected string interactMessage;
+    [SerializeField] protected List<GameObject> playersInTrigger = new List<GameObject>();
 
 
     protected Interactable(string interactMessage)
@@ -18,7 +19,11 @@ public abstract class Interactable : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            playerInTrigger = true;
+            playersInTrigger.Add(other.gameObject);
+
+            PlayerController otherController = other.GetComponent<PlayerController>();
+            if (!otherController.IsLocalPlayer) { return; }
+            
             active = true;
             GameController.PlayerInteractableTriggerToggle.Invoke(interactMessage);
         }
@@ -28,7 +33,10 @@ public abstract class Interactable : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            playerInTrigger = false;
+            playersInTrigger.Remove(other.gameObject);
+            
+            PlayerController otherController = other.GetComponent<PlayerController>();
+            if (!otherController.IsLocalPlayer) { return; }
 
             // Disable message only if it is still active when exiting the trigger.
             if (active)
