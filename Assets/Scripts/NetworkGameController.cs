@@ -4,6 +4,8 @@ using UnityEngine.Events;
 using System;
 using System.Collections.Generic;
 using UnityEditor;
+using Unity.VisualScripting;
+using UnityEngine.SceneManagement;
 
 public class NetworkGameController : NetworkBehaviour
 {
@@ -14,21 +16,62 @@ public class NetworkGameController : NetworkBehaviour
     [SerializeField] private GameObject playerListContainer;
 
     public UnityEvent OnClientFailedToJoin;
-    public UnityEvent OnMonsterTaken;
+    public UnityEvent OnClientConnected;
+    public UnityEvent<ulong> OnAllPlayersReadyToggle;       // ONLY INVOKE WITH SERVER'S CLIENTID
+    public UnityEvent<ulong> OnMonsterToggle;
+
 
     [SerializeField] private NetworkList<PlayerListData> playerList;
     [SerializeField] private List<PlayerListEntry> playerEntries;
+
+    public NetworkVariable<bool> monsterTaken;
+
+    private int playerReadyCount;
+
+    [SerializeField] private Transform playerPrefab;
+    [SerializeField] private Transform monsterPrefab;
+
+    private enum PlayerDataValueToggle
+    {
+        Monster,
+        Ready,
+    }
 
     private void Awake()
     {
         Singleton = this;
         OnClientFailedToJoin = new UnityEvent();
-        OnMonsterTaken = new UnityEvent();
-        
+        OnClientConnected = new UnityEvent();
+        OnAllPlayersReadyToggle = new UnityEvent<ulong>();
+        OnMonsterToggle = new UnityEvent<ulong>();
+        monsterTaken = new NetworkVariable<bool>();
+
         DontDestroyOnLoad(gameObject);
 
         playerList = new NetworkList<PlayerListData>();
         playerList.OnListChanged += PlayerList_OnListChanged;
+    }
+
+    private void Start()
+    {
+    }
+
+    private void SceneManager_OnLoadEventCompleted(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+    {
+        foreach (var clientId in NetworkManager.ConnectedClientsIds)
+        {
+            Transform playerTransform;
+            if (GetPlayerListDataByClientId(clientId).Value.monster)
+            {
+                playerTransform = Instantiate(monsterPrefab);
+            }
+            else
+            {
+                playerTransform = Instantiate(playerPrefab);
+            }
+
+            playerTransform.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId, true);
+        }
     }
 
     private void PlayerList_OnListChanged(NetworkListEvent<PlayerListData> changeEvent)
@@ -82,6 +125,18 @@ public class NetworkGameController : NetworkBehaviour
         }
     }
 
+    public void StartGame()
+    {
+        if (playerReadyCount == playerList.Count)
+        {
+            GameSceneController.Singleton.LoadGameScene();
+        }
+        else
+        {
+            Debug.LogError("Not all players were ready when start was requested");
+        }
+    }
+
     public void StartHost()
     {
         NetworkManager.Singleton.ConnectionApprovalCallback += NetworkManager_ConnectionApprovalCallback;
@@ -90,6 +145,8 @@ public class NetworkGameController : NetworkBehaviour
         NetworkManager.Singleton.OnClientDisconnectCallback += host_NetworkManager_OnClientDisconnectCallback;
         
         NetworkManager.Singleton.StartHost();
+        NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += SceneManager_OnLoadEventCompleted;
+        monsterTaken.Value = false;
     }
 
     public void StartClient()
@@ -101,7 +158,11 @@ public class NetworkGameController : NetworkBehaviour
 
     private void host_NetworkManager_OnClientConnectedCallback(ulong clientId)
     {
-        playerList.Add(new PlayerListData { clientId = clientId, monster = false });
+        if (playerReadyCount > 0 && playerReadyCount == playerList.Count)
+        {
+            OnAllPlayersReadyToggle.Invoke(NetworkManager.Singleton.LocalClientId);
+        }
+        playerList.Add(new PlayerListData { clientId = clientId, monster = false, ready = false });
     }
 
     private void host_NetworkManager_OnClientDisconnectCallback(ulong clientId)
@@ -110,7 +171,22 @@ public class NetworkGameController : NetworkBehaviour
         var data = GetPlayerListDataByClientId(clientId);
         if (data != null)
         {
+            if (data.Value.monster)
+            {
+                MonsterToggleClientRpc(clientId);
+            }
             playerList.Remove((PlayerListData) data);
+            if (data.Value.ready)
+            {
+                playerReadyCount--;
+            }
+            else
+            {
+                if (playerReadyCount > 0 && playerReadyCount == playerList.Count)
+                {
+                    OnAllPlayersReadyToggle.Invoke(NetworkManager.Singleton.LocalClientId);
+                }
+            }
         }
     }
 
@@ -121,6 +197,7 @@ public class NetworkGameController : NetworkBehaviour
         {
             CreateAndAddPlayerListEntry(player);
         }
+        OnClientConnected.Invoke();
     }
 
     private void client_NetworkManager_OnClientDisconnectCallback(ulong clientId)
@@ -136,6 +213,12 @@ public class NetworkGameController : NetworkBehaviour
         if (NetworkManager.Singleton.ConnectedClientsIds.Count >= Consts.MAX_PLAYER_COUNT)
         {
             response.Reason = "Game is full";
+            response.Approved = false;
+            return;
+        }
+        if (SceneManager.GetActiveScene().name == GameSceneController.Singleton.gameSceneName)
+        {
+            response.Reason = "Game is in progress";
             response.Approved = false;
             return;
         }
@@ -158,35 +241,66 @@ public class NetworkGameController : NetworkBehaviour
         entry.clientId = data.clientId;
         entry.playerNameText.text = data.clientId.ToString();
         entry.monsterText.text = data.monster == true ? "Monster" : "Survivor";
+        entry.readyText.text = data.ready == true ? "Ready" : "Not Ready";
 
         playerEntries.Add(entry);
     }
 
     [ServerRpc(RequireOwnership = false)]
-    public void MonsterRequestedServerRpc(ulong clientId)
+    public void MonsterToggleServerRpc(ulong clientId)
     {
-        Debug.Log($"ClientId: {clientId} wants to play monster!");
-
-        foreach (var it in playerList)
-        {
-            if (it.monster == true)
-            {
-                return;
-            }
-        }
-        var oldPlayerData = GetPlayerListDataByClientId(clientId);
-        var index = playerList.IndexOf(oldPlayerData.Value);
-
-        var modifiedPlayer = new PlayerListData { clientId = oldPlayerData.Value.clientId, monster = true };
-        playerList.Remove(oldPlayerData.Value);
-        playerList.Insert(index, modifiedPlayer);
-
-        MonsterTakenClientRpc();
+        UpdatePlayerDataToggledValue(clientId, PlayerDataValueToggle.Monster);
+        monsterTaken.Value = !monsterTaken.Value;
+        MonsterToggleClientRpc(clientId);
     }
 
     [ClientRpc]
-    private void MonsterTakenClientRpc()
+    private void MonsterToggleClientRpc(ulong clientId)
     {
-        OnMonsterTaken.Invoke();
+        OnMonsterToggle.Invoke(clientId);
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void PlayerReadyToggleServerRpc(ulong clientId)
+    {
+        UpdatePlayerDataToggledValue(clientId, PlayerDataValueToggle.Ready);
+        if (GetPlayerListDataByClientId(clientId).Value.ready == true)
+        {
+            PlayerReady();
+        }
+        else
+        {
+            PlayerUnready();
+        }
+    }
+
+    private void UpdatePlayerDataToggledValue(ulong clientId, PlayerDataValueToggle toggledValue)
+    {
+        var oldData = GetPlayerListDataByClientId(clientId);
+        var index = playerList.IndexOf(oldData.Value);
+
+        var modifiedPlayer = new PlayerListData();
+        modifiedPlayer.clientId = clientId;
+        modifiedPlayer.monster = toggledValue == PlayerDataValueToggle.Monster ? !oldData.Value.monster : oldData.Value.monster;
+        modifiedPlayer.ready = toggledValue == PlayerDataValueToggle.Ready ? !oldData.Value.ready : oldData.Value.ready;
+
+        playerList.Remove(oldData.Value);
+        playerList.Insert(index, modifiedPlayer);
+    }
+
+    private void PlayerUnready()
+    {
+        if (playerReadyCount == NetworkManager.Singleton.ConnectedClientsIds.Count) {
+            OnAllPlayersReadyToggle.Invoke(NetworkManager.Singleton.LocalClientId);
+        }
+        playerReadyCount--;
+    }
+    private void PlayerReady()
+    {
+        playerReadyCount++;
+        if (playerReadyCount == NetworkManager.Singleton.ConnectedClientsIds.Count)
+        {
+            OnAllPlayersReadyToggle.Invoke(NetworkManager.Singleton.LocalClientId);
+        }
     }
 }

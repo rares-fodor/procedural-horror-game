@@ -91,7 +91,7 @@ public class LevelGenerator : NetworkBehaviour
     [SerializeField] private bool randomizeNoise = true;
 
     // Safe zone prefab
-    [SerializeField] private GameObject safeZone;
+    [SerializeField] private GameObject originPoint;
 
     // Assign point of progress prefab.
     [SerializeField] private GameObject pointOfProgress;
@@ -123,7 +123,7 @@ public class LevelGenerator : NetworkBehaviour
     // Track prefabs
     private List<GameObject> spawnedPrefabs = new List<GameObject>();
     private List<GameObject> spawnedPillars = new List<GameObject>();
-    private GameObject spawnedSafeZone;
+    private GameObject spawnedOriginPoint;
 
     // Map prefabs into spatial cells
     private HashGrid hashGrid;
@@ -136,12 +136,15 @@ public class LevelGenerator : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        Debug.Log("level gen spawned");
         base.OnNetworkSpawn();
         if (IsServer)
         {
             // Set seed, any clients joining will see this value and generate their levels accordingly.
             seed.Value = (int) System.DateTime.Now.Ticks;
         }
+
+        Debug.Log("Spawning level generator");
 
         Random.InitState(seed.Value);
 
@@ -156,7 +159,7 @@ public class LevelGenerator : NetworkBehaviour
         groundMaterial.SetTexture("_NoiseTexture", noiseTexture);
 
         // Spawn prefabs
-        SpawnSafeZone();
+        SpawnOriginPoint();
         if (IsServer)
         { 
             SpawnPointsOfProgress();
@@ -261,10 +264,10 @@ public class LevelGenerator : NetworkBehaviour
         noiseOffset = new Vector2(Random.Range(0f, 100.0f), Random.Range(0f, 100.0f));
     }
     
-    private void SpawnSafeZone()
+    private void SpawnOriginPoint()
     {
         // Place safe zone at world origin
-        spawnedSafeZone = Instantiate(safeZone, new Vector3(0, 0, 0), Quaternion.identity);
+        spawnedOriginPoint = Instantiate(originPoint, new Vector3(0, 0, 0), Quaternion.identity);
     }
 
     /// <summary>
@@ -288,8 +291,9 @@ public class LevelGenerator : NetworkBehaviour
                     0,
                     Random.Range(-paddedPlaneSize.y / 2, paddedPlaneSize.y / 2)
                 );
-                canSpawn = !CollisionTest(position, spawnedPillars, spreadFactor)
-                    && !ProximityTest(position, spawnedSafeZone, 1.0f);
+                // Test proximity to the other pillars and to the center zone.
+                canSpawn = !ProximityTest(position, spawnedPillars, spreadFactor)
+                    && !ProximityTest(position, spawnedOriginPoint, 1.0f);
                 retries--;
             }
 
@@ -334,9 +338,9 @@ public class LevelGenerator : NetworkBehaviour
                     );
 
                     // Test collision with the safe zone
-                    if (ProximityTest(position, spawnedSafeZone, 1.0f)) continue;
+                    if (ProximityTest(position, spawnedOriginPoint, 1.0f)) continue;
                     // Test collisions with points of progress
-                    if (CollisionTest(position, spawnedPillars, safetyRadiusFactor)) continue;
+                    if (ProximityTest(position, spawnedPillars, safetyRadiusFactor)) continue;
                     // Test collisions with other detail prefabs
                     if (HashgridNeighborsCollisionTest(position)) continue;
 
@@ -376,7 +380,7 @@ public class LevelGenerator : NetworkBehaviour
                 Vector2Int neighborCell = cell + new Vector2Int(i, j);
                 if (hashGrid.TryGetValue(neighborCell, out List<GameObject> prefabsInCell))
                 {
-                    if (CollisionTest(position, prefabsInCell, safetyRadiusFactor))
+                    if (ProximityTest(position, prefabsInCell, safetyRadiusFactor))
                     {
                         return true;
                     }
@@ -416,7 +420,7 @@ public class LevelGenerator : NetworkBehaviour
     /// Too close meaning within a disc of radius equal to the object's collider bounds 
     /// extents multiplied by the given <paramref name="radiusFactor"/>
     /// </summary>
-    private bool CollisionTest(Vector3 position, List<GameObject> collection, float radiusFactor)
+    private bool ProximityTest(Vector3 position, List<GameObject> collection, float radiusFactor)
     {
         foreach (var obj in collection)
         {

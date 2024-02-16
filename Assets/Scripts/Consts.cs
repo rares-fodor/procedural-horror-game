@@ -21,4 +21,6 @@ public static class Consts
 
     public static int PILLAR_COUNT = 7;
     public static int MAX_PLAYER_COUNT = 4;
+
+    public static int PLAYER_MAX_HP = 2;
 }

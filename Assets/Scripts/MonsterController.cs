@@ -7,9 +7,11 @@ using Unity.Netcode;
 public class MonsterController : PlayableEntity
 {
     private GameController gameController;
+    [SerializeField] private bool spawned;
 
     private void Awake()
     {
+        spawned = false;
         gameController = FindObjectOfType<GameController>();
     }
 
@@ -22,17 +24,16 @@ public class MonsterController : PlayableEntity
     { 
         if (!IsServer) { return; }
 
-        if (other.gameObject.CompareTag("Player"))
+        if (other.gameObject.CompareTag("Player") && spawned)
         {
             Debug.Log($"[Server] Monster collided with a player at {transform.position}");
             PlayerController player = other.gameObject.GetComponent<PlayerController>();
-            player.isAlive.Value = false;
-            gameController.NotifyPlayerKilled();
+            player.TakeDamage();
         }
     }
 
     public override Vector3 GetSpawnLocation()
-    {    
+    {
         // Get plane extents
         var extents = LevelGenerator.planeExtents;
 
@@ -41,6 +42,14 @@ public class MonsterController : PlayableEntity
         spawnPoint.x = extents.x * spawnPoint.x;
         spawnPoint.y = extents.z * spawnPoint.y;
 
+        MonsterSpawnedAndMovedServerRpc();
         return new Vector3(spawnPoint.x, 0.5f, spawnPoint.y);
     }
+
+    [ServerRpc]
+    private void MonsterSpawnedAndMovedServerRpc()
+    {
+        spawned = true;
+    }
+    
 }

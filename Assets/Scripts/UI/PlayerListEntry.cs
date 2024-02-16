@@ -8,5 +8,6 @@ public class PlayerListEntry : MonoBehaviour
 {
     [SerializeField] public TMP_Text playerNameText;
     [SerializeField] public TMP_Text monsterText;
+    [SerializeField] public TMP_Text readyText;
     public ulong clientId;
 }

@@ -16,18 +16,22 @@ public class PlayerController : PlayableEntity
     private bool indicatorVisible = false;
     private Vector3 hintTarget;
 
+    private NetworkVariable<int> hitPoints = new NetworkVariable<int>();
 
     private void Awake()
     {
         indicatorInstance = Instantiate(indicator, new Vector3(0,0,0), Quaternion.identity);
         indicatorInstance.SetActive(false);
+        hitPoints.OnValueChanged += OnDamageTaken;
     }
 
     public override void OnNetworkSpawn()
     {
+        Debug.Log("Moved player to spawnpoint");
         if (IsServer)
         {
             isAlive.Value = true;
+            hitPoints.Value = Consts.PLAYER_MAX_HP;
         }
         if (!IsOwner) { return; }
         base.OnNetworkSpawn();
@@ -89,5 +93,25 @@ public class PlayerController : PlayableEntity
         float spawnX = Random.Range(-20, 20);
         float spawnZ = Random.Range(-20, 20);
         return new Vector3(spawnX, 0.5f, spawnZ);
+    }
+
+    public void TakeDamage()
+    {
+        hitPoints.Value--;
+
+        if (!IsServer) { return; }
+        if (hitPoints.Value == 0)
+        {
+            isAlive.Value = false;
+            GameController.Singleton.NotifyPlayerKilled();
+        }
+    }
+
+    private void OnDamageTaken(int prev, int current)
+    {
+        if (IsLocalPlayer)
+        {
+            UIController.Singleton.HPIndicatorController.HP = current;
+        }
     }
 }

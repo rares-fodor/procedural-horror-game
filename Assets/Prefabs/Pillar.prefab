@@ -109,9 +109,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playersInTrigger: []
-  timeToCollect: 5
+  timeToCollect: 2
   playersInteractingCountServer: 0
-  progressTimer: 0
+  progressTimer:
+    m_InternalValue: 0
 --- !u!114 &3385754435554349120
 MonoBehaviour:
   m_ObjectHideFlags: 0

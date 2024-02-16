@@ -11,18 +11,28 @@ public class GameSceneController : NetworkBehaviour
 {
 
 #if UNITY_EDITOR
+    public UnityEditor.SceneAsset MenuSceneAsset;
     public UnityEditor.SceneAsset GameSceneAsset;
     private void OnValidate()
     {
         if (GameSceneAsset != null) { gameSceneName = GameSceneAsset.name; }
+        if (menuSceneName != null) { menuSceneName = MenuSceneAsset.name; }
     }
 #endif
 
-    [SerializeField] private string gameSceneName;
+    [SerializeField] public string gameSceneName;
+    [SerializeField] public string menuSceneName;
 
-    public void LoadScene(string sceneName)
+    public static GameSceneController Singleton { get; private set; }
+
+    private void Awake()
     {
-        if (IsServer && string.IsNullOrEmpty(gameSceneName))
+        Singleton = this;
+    }
+
+    public void LoadGameScene()
+    {
+        if (IsServer && !string.IsNullOrEmpty(gameSceneName))
         {
             var status = NetworkManager.SceneManager.LoadScene(gameSceneName, LoadSceneMode.Single);
             if (status != SceneEventProgressStatus.Started)

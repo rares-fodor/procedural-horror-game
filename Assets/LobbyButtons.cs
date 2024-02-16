@@ -1,29 +1,145 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class LobbyButtons : MonoBehaviour
 {
-    [SerializeField] private Button ReadyButton;
-    [SerializeField] private Button MonsterButton;
-    [SerializeField] private Button LeaveButton;
-    [SerializeField] private Button ChangeNameButton;
+
+    // [TODO] Implement leave
+    [SerializeField] private Button leaveButton;
+    [SerializeField] private Button changeNameButton;
+
+    [SerializeField] private Button readyButton;
+    [SerializeField] private TMP_Text readyButtonText;
+
+    [SerializeField] private Button monsterButton;
+    [SerializeField] private TMP_Text monsterButtonText;
+
+    private enum MonsterButtonState
+    {
+        IsSurvivor,
+        IsMonster,
+    }
+
+    private MonsterButtonState monsterState;
+    private bool allPlayersReady;
+    private bool localPlayerReady;
 
     private void Awake()
     {
-        MonsterButton.onClick.AddListener(() =>
+        monsterButton.onClick.AddListener(() =>
         {
-            NetworkGameController.Singleton.MonsterRequestedServerRpc(NetworkManager.Singleton.LocalClientId);
+            NetworkGameController.Singleton.MonsterToggleServerRpc(NetworkManager.Singleton.LocalClientId);
         });
+        readyButton.onClick.AddListener(() =>
+        {
+            // Maintain this exact order. Toggle boolean first, set button visuals, and finally notify server.
+            if (allPlayersReady)
+            {
+                // Load game scene, go through netgamecontroller get player's data move it to the next scene
+                // We need it to instantiate prefabs correctly
+                NetworkGameController.Singleton.StartGame();
+            }
+            else
+            {
+                localPlayerReady = !localPlayerReady;
+                SetReadyButton();
+                NetworkGameController.Singleton.PlayerReadyToggleServerRpc(NetworkManager.Singleton.LocalClientId);
+            }
+        });
+
+        monsterButtonText.text = "Play Monster";
+        monsterButton.interactable = true;
+
+        readyButtonText.text = "Ready";
+        readyButton.interactable = true;
+
+        allPlayersReady = false;
+        localPlayerReady = false;
+        monsterState = MonsterButtonState.IsSurvivor;
     }
 
     private void Start()
     {
-        NetworkGameController.Singleton.OnMonsterTaken.AddListener(() => {
-            Debug.Log("Button disabled, no monster for you");
-            MonsterButton.interactable = false;
-        });
+        NetworkGameController.Singleton.OnMonsterToggle.AddListener(NetworkGameController_OnMonsterToggle);
+        NetworkGameController.Singleton.OnClientConnected.AddListener(NetworkGameController_OnClientConnected);
+        NetworkGameController.Singleton.OnAllPlayersReadyToggle.AddListener(NetworkGameController_OnAllPlayersReadyToggle);
+    }
+
+    private void OnDestroy()
+    {
+        NetworkGameController.Singleton.OnMonsterToggle.RemoveListener(NetworkGameController_OnMonsterToggle);
+        NetworkGameController.Singleton.OnClientConnected.RemoveListener(NetworkGameController_OnClientConnected);
+    }
+
+    private void NetworkGameController_OnMonsterToggle(ulong clientId)
+    {
+        Debug.Log("Button disabled, no monster for you");
+        if (NetworkManager.Singleton.LocalClientId == clientId)
+        {
+            MonsterButtonStateToggle();
+        }
+        else
+        {
+            monsterButton.interactable = !monsterButton.interactable;
+        }
+    }
+
+    private void NetworkGameController_OnClientConnected()
+    {
+        // Treats joining a lobby after the monster has been taken.
+        if (NetworkGameController.Singleton.monsterTaken.Value == true)
+        {
+            monsterButton.interactable = false;
+        }
+    }
+
+    private void NetworkGameController_OnAllPlayersReadyToggle(ulong clientId)
+    {
+        // This will only be invoked with the server's clientId
+        if (NetworkManager.Singleton.LocalClientId == clientId)
+        {
+            if (allPlayersReady)
+            {
+                SetReadyButton();
+            }
+            else
+            {
+                readyButtonText.text = "Start";
+            }
+            allPlayersReady = !allPlayersReady;
+        }
+    }
+
+    private void MonsterButtonStateToggle()
+    {
+        // If clientId had disconnected, this step is skipped and the rest of the players enable their buttons
+        if (monsterState == MonsterButtonState.IsSurvivor)
+        {
+            // Button text should be the opposite of the state. Read as, button should show the next state upon clicking
+            monsterButtonText.text = "Play Survivor";
+            monsterState = MonsterButtonState.IsMonster;
+        }
+        else
+        {
+            monsterButtonText.text = "Play Monster";
+            monsterState = MonsterButtonState.IsSurvivor;
+        }
+    }
+
+    private void SetReadyButton()
+    {
+        if (localPlayerReady)
+        {
+            // If player is ready button should switch to "unready"
+            readyButtonText.text = "Unready";
+        }
+        else
+        {
+            readyButtonText.text = "Ready";
+        }
     }
 }

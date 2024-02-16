@@ -16,10 +16,10 @@ public class PillarController : Interactable
 
     // Time since interact button was pressed
     [SerializeField] private NetworkVariable<float> progressTimer = new NetworkVariable<float>();
+    private ProgressBar progressBar;
 
     private bool interacting = false;
     private Material dissolveMaterial;
-    private ProgressBar progressBar;
 
     public PillarController() : base(Consts.INTERACT_MESSAGE) { }
 
@@ -27,7 +27,15 @@ public class PillarController : Interactable
     {
         dissolveMaterial = gameObject.GetComponent<Renderer>().material;
         dissolveMaterial.SetFloat("_ClipThreshold", 0f);
-        
+    }
+
+    private void Start()
+    {
+        NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += SceneManager_OnLoadEventCompleted;
+    }
+
+    private void SceneManager_OnLoadEventCompleted(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+    {
         progressBar = FindObjectOfType<ProgressBar>();
         progressBar.maximum = timeToCollect;
     }
@@ -35,6 +43,7 @@ public class PillarController : Interactable
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
+
         if (!IsServer) { return; }
 
         progressTimer.Value = 0f;
@@ -42,7 +51,18 @@ public class PillarController : Interactable
 
     private void Update()
     {
-        CollectPillar();
+        if (progressBar == null)
+        {
+            progressBar = FindAnyObjectByType<ProgressBar>();
+            if (progressBar != null)
+            {
+                progressBar.maximum = timeToCollect;
+            }
+        }
+        else
+        {
+           CollectPillar();
+        }
     }
 
     /// <summary>
@@ -87,7 +107,7 @@ public class PillarController : Interactable
         float speedUpModifier = 1f;
         if (playersInteractingCountServer > 2)
         {
-            speedUpModifier = 1f + 0.2f * playersInteractingCountServer;
+            speedUpModifier = 1f + 0.25f * playersInteractingCountServer;
         }
         progressTimer.Value += Time.deltaTime * speedUpModifier;
 

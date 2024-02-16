@@ -8,6 +8,7 @@ public struct PlayerListData : IEquatable<PlayerListData>, INetworkSerializable
 {
     public ulong clientId;
     public bool monster;
+    public bool ready;
 
     public bool Equals(PlayerListData other)
     {
@@ -18,5 +19,6 @@ public struct PlayerListData : IEquatable<PlayerListData>, INetworkSerializable
     {
         serializer.SerializeValue(ref clientId);
         serializer.SerializeValue(ref monster);
+        serializer.SerializeValue(ref ready);
     }
 }

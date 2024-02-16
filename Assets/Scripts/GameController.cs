@@ -4,11 +4,14 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.Mathematics;
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
 
 public class GameController : NetworkBehaviour
 {
+    public static GameController Singleton { get; private set; }
+
     // Game
     [HideInInspector] public static UnityEvent GameProgressedEvent = new UnityEvent();
 
@@ -32,17 +35,20 @@ public class GameController : NetworkBehaviour
     // Holds references for all canvas elements
     private UIController UIController;
 
+    private int progress = 0;
+
     public void Awake()
     {
+        Singleton = this;
         UIController = FindObjectOfType<UIController>();
-        // TODO might need to be removed
-        if (!IsServer) { return; }
-        playersAlive.Value = FindObjectsOfType<PlayerController>().Count();
+        GameProgressedEvent.AddListener(OnGameProgressed);
     }
 
     public override void OnNetworkSpawn()
     {
         playersAlive.OnValueChanged += PlayerKilledCallback;
+        if (!IsServer) { return; }
+        playersAlive.Value = NetworkManager.Singleton.ConnectedClientsIds.Count - 1;
     }
 
     public override void OnNetworkDespawn()
@@ -54,10 +60,9 @@ public class GameController : NetworkBehaviour
     {
         // TODO Update HUD to reflect players' status
         Debug.Log($"{current} players remaining");
-        UIController.gameOverScreen.GameOver("All players killed! Game over!");
-        if (playersAlive.Value == 0)
+        if (current == 0)
         {
-            Debug.Log("All players killed");
+            UIController.gameOverScreen.GameOver("All players defeated! Game over!");
         }
     }
 
@@ -97,5 +102,14 @@ public class GameController : NetworkBehaviour
     {
         if (!IsServer) { return; }
         playersAlive.Value -= 1;
+    }
+
+    private void OnGameProgressed()
+    {
+        progress++;
+        if (progress == Consts.PILLAR_COUNT)
+        {
+            UIController.Singleton.gameOverScreen.GameOver("Survivors activated all pillars, victory!");
+        }
     }
 }
