@@ -73,6 +73,7 @@ public class LobbyButtons : MonoBehaviour
     {
         NetworkGameController.Singleton.OnMonsterToggle.RemoveListener(NetworkGameController_OnMonsterToggle);
         NetworkGameController.Singleton.OnClientConnected.RemoveListener(NetworkGameController_OnClientConnected);
+        NetworkGameController.Singleton.OnAllPlayersReadyToggle.RemoveListener(NetworkGameController_OnAllPlayersReadyToggle);
     }
 
     private void NetworkGameController_OnMonsterToggle(ulong clientId)

@@ -380,7 +380,7 @@ public class LevelGenerator : NetworkBehaviour
                 Vector2Int neighborCell = cell + new Vector2Int(i, j);
                 if (hashGrid.TryGetValue(neighborCell, out List<GameObject> prefabsInCell))
                 {
-                    if (ProximityTest(position, prefabsInCell, safetyRadiusFactor))
+                    if (ProximityTest(position, prefabsInCell, 1.0f))
                     {
                         return true;
                     }
@@ -402,12 +402,6 @@ public class LevelGenerator : NetworkBehaviour
 
         // Half of the collider size
         float objExtent = collider.bounds.extents.magnitude;
-
-        // Ignore safety margin if object is not a pillar
-        if (!obj.CompareTag("Pillar"))
-        {
-            radiusFactor = 1;
-        }
 
         if (Vector3.Distance(position, obj.transform.position) < (objExtent * radiusFactor))
             return true;

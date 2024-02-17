@@ -59,14 +59,14 @@ public class EnemyBehavior : MonoBehaviour
         enemyAgent = gameObject.GetComponent<NavMeshAgent>();
         gameProgress = 0;
         agentSpeed = enemyAgent.speed;
-        GameController.GameProgressedEvent.AddListener(OnGameProgressed);
-        GameController.PlayerSafeZoneToggle.AddListener(OnPlayerInSafeZone);
+        GameController.Singleton.GameProgressedEvent.AddListener(OnGameProgressed);
+        GameController.Singleton.PlayerSafeZoneToggle.AddListener(OnPlayerInSafeZone);
     }
 
     private void OnDestroy()
     {
-        GameController.GameProgressedEvent.RemoveListener(OnGameProgressed);
-        GameController.PlayerSafeZoneToggle.RemoveListener(OnPlayerInSafeZone);
+        GameController.Singleton.GameProgressedEvent.RemoveListener(OnGameProgressed);
+        GameController.Singleton.PlayerSafeZoneToggle.RemoveListener(OnPlayerInSafeZone);
     }
 
     /// <summary>
@@ -78,7 +78,7 @@ public class EnemyBehavior : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             Debug.Log("Player killed!");
-            GameController.PlayerDied.Invoke();
+            GameController.Singleton.PlayerDied.Invoke();
         }
     }
 

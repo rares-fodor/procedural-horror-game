@@ -1420,7 +1420,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1071453180}
-  - component: {fileID: 1071453181}
   m_Layer: 5
   m_Name: ProgressCounterParent
   m_TagString: Untagged
@@ -1448,19 +1447,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 299.2657, y: 97.683}
   m_Pivot: {x: 0, y: 1}
---- !u!114 &1071453181
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1071453179}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 79f94161680f84a4d89de7f03ea2b5d2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  progressCounterText: {fileID: 1312153148}
 --- !u!1 &1097069578
 GameObject:
   m_ObjectHideFlags: 0
@@ -1842,6 +1828,7 @@ GameObject:
   - component: {fileID: 1270510444}
   - component: {fileID: 1270510443}
   - component: {fileID: 1270510445}
+  - component: {fileID: 1270510447}
   - component: {fileID: 1270510446}
   m_Layer: 5
   m_Name: Canvas
@@ -1967,6 +1954,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameOverScreen: {fileID: 1270510443}
   HPIndicatorController: {fileID: 1270510445}
+  progressCounterController: {fileID: 1270510447}
 --- !u!114 &1270510445
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2001,6 +1989,19 @@ MonoBehaviour:
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
+--- !u!114 &1270510447
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1270510438}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79f94161680f84a4d89de7f03ea2b5d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  progressCounterText: {fileID: 1312153148}
 --- !u!1 &1312153146
 GameObject:
   m_ObjectHideFlags: 0
@@ -2538,6 +2539,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f3f802dcb6bd76d4fabf7f8c4a194d02, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  GameProgressedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  PlayerDied:
+    m_PersistentCalls:
+      m_Calls: []
+  PlayerInteractableTriggerToggle:
+    m_PersistentCalls:
+      m_Calls: []
+  DialogueStarted:
+    m_PersistentCalls:
+      m_Calls: []
+  DialogueFinished:
+    m_PersistentCalls:
+      m_Calls: []
+  PlayerSafeZoneToggle:
+    m_PersistentCalls:
+      m_Calls: []
+  NPCLocationChangedEvent:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &1406489488
 MonoBehaviour:
   m_ObjectHideFlags: 0

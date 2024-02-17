@@ -13,40 +13,36 @@ public class GameController : NetworkBehaviour
     public static GameController Singleton { get; private set; }
 
     // Game
-    [HideInInspector] public static UnityEvent GameProgressedEvent = new UnityEvent();
-
-    // Player
-    [HideInInspector] public static UnityEvent PlayerDied = new UnityEvent();
-    [HideInInspector] public static UnityEvent PlayerSafeZoneToggle = new UnityEvent();
+    [HideInInspector] public UnityEvent GameProgressedEvent = new UnityEvent();
 
     // UI
-    [HideInInspector] public static UnityEvent<string> PlayerInteractableTriggerToggle = new UnityEvent<string>();
-    [HideInInspector] public static UnityEvent<string, Dialogue> DialogueStarted = new UnityEvent<string, Dialogue>();
-    [HideInInspector] public static UnityEvent DialogueFinished = new UnityEvent();
+    [HideInInspector] public UnityEvent<string> PlayerInteractableTriggerToggle = new UnityEvent<string>();
+    [HideInInspector] public UnityEvent<string, Dialogue> DialogueStarted = new UnityEvent<string, Dialogue>();
+    [HideInInspector] public UnityEvent DialogueFinished = new UnityEvent();
 
     // NPC
-    [HideInInspector] public static UnityEvent<GameObject> NPCLocationChangedEvent = new UnityEvent<GameObject>();
+    [HideInInspector] public UnityEvent PlayerSafeZoneToggle = new UnityEvent();
+    [HideInInspector] public UnityEvent<GameObject> NPCLocationChangedEvent = new UnityEvent<GameObject>();
+
+    // Players
+    [HideInInspector] public  UnityEvent PlayerDied = new UnityEvent();
 
     private static List<GameObject> pillars;
     public static GameObject LocalPlayer;
 
     private NetworkVariable<int> playersAlive = new NetworkVariable<int>();
+    private NetworkVariable<int> gameProgress = new NetworkVariable<int>();
 
-    // Holds references for all canvas elements
-    private UIController UIController;
-
-    private int progress = 0;
 
     public void Awake()
     {
         Singleton = this;
-        UIController = FindObjectOfType<UIController>();
-        GameProgressedEvent.AddListener(OnGameProgressed);
     }
 
     public override void OnNetworkSpawn()
     {
         playersAlive.OnValueChanged += PlayerKilledCallback;
+        gameProgress.OnValueChanged += GameProgressedCallback;
         if (!IsServer) { return; }
         playersAlive.Value = NetworkManager.Singleton.ConnectedClientsIds.Count - 1;
     }
@@ -54,6 +50,7 @@ public class GameController : NetworkBehaviour
     public override void OnNetworkDespawn()
     {
         playersAlive.OnValueChanged -= PlayerKilledCallback;
+        gameProgress.OnValueChanged -= GameProgressedCallback;
     }
 
     private void PlayerKilledCallback(int prev, int current)
@@ -62,7 +59,7 @@ public class GameController : NetworkBehaviour
         Debug.Log($"{current} players remaining");
         if (current == 0)
         {
-            UIController.gameOverScreen.GameOver("All players defeated! Game over!");
+            UIController.Singleton.gameOverScreen.GameOver("All players defeated! Game over!");
         }
     }
 
@@ -104,12 +101,18 @@ public class GameController : NetworkBehaviour
         playersAlive.Value -= 1;
     }
 
-    private void OnGameProgressed()
+    public void NotifyGameProgressed()
     {
-        progress++;
-        if (progress == Consts.PILLAR_COUNT)
+        if (!IsServer) { return; }
+        gameProgress.Value++;
+    }
+
+    private void GameProgressedCallback(int prev, int curr)
+    {
+        UIController.Singleton.progressCounterController.DisplayGameProgress(curr);
+        if (curr == Consts.PILLAR_COUNT)
         {
-            UIController.Singleton.gameOverScreen.GameOver("Survivors activated all pillars, victory!");
+            UIController.Singleton.gameOverScreen.GameOver("All pillars activated! Survivors win!");
         }
     }
 }

@@ -97,9 +97,9 @@ public class PlayerController : PlayableEntity
 
     public void TakeDamage()
     {
+        if (!IsServer) { return; }
         hitPoints.Value--;
 
-        if (!IsServer) { return; }
         if (hitPoints.Value == 0)
         {
             isAlive.Value = false;

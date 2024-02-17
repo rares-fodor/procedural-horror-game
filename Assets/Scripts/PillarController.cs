@@ -153,7 +153,7 @@ public class PillarController : Interactable
         progressBar.IsVisible = false;
 
         // Notify that a pillar has been collected and the game progressed.
-        GameController.GameProgressedEvent.Invoke();
+        GameController.Singleton.NotifyGameProgressed();
         DisableInteractMessage();
     }
 }

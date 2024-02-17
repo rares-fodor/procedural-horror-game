@@ -12,7 +12,7 @@ public static class Consts
     public static string INTERACT_MESSAGE = "Hold " + INTERACT_KEY + " to collect";
     public static string DIALOGUE_MESSAGE = "Press " + INTERACT_KEY + " to talk";
 
-    public static string NPC_NAME = "Mysterious Wizard";
+    public static string NPC_NAME = "Old Tree";
 
     public static KeyCode SKIP_DIALOGUE_LINE_KEY = KeyCode.Space;
 

@@ -10,9 +10,9 @@ public class InteractMessageController : MonoBehaviour
 
     [SerializeField] private bool visible = false;
 
-    private void Awake()
+    private void Start()
     {
-        GameController.PlayerInteractableTriggerToggle.AddListener(OnPlayerToggleTrigger);
+        GameController.Singleton.PlayerInteractableTriggerToggle.AddListener(OnPlayerToggleTrigger);
     }
 
     private void Update()

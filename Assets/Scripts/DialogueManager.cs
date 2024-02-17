@@ -11,9 +11,9 @@ public class DialogueManager : MonoBehaviour
     private bool active = false;
     private int sentenceIndex = 0;
 
-    private void Awake()
+    private void Start()
     {
-        GameController.DialogueStarted.AddListener(OnDialogueStarted);
+        GameController.Singleton.DialogueStarted.AddListener(OnDialogueStarted);
     }
 
     private void Update()
@@ -42,9 +42,11 @@ public class DialogueManager : MonoBehaviour
         if (sentenceIndex > dialogue.sentences.Length - 1)
         {
             active = false;
-            GameController.DialogueFinished.Invoke();
+            GameController.Singleton.DialogueFinished.Invoke();
         }
         else
+        {
             dialogueBody.text = dialogue.sentences[sentenceIndex++];
+        }
     }
 }

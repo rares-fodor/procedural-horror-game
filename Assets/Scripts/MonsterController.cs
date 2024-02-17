@@ -9,6 +9,8 @@ public class MonsterController : PlayableEntity
     private GameController gameController;
     [SerializeField] private bool spawned;
 
+    private PlayerController target;
+
     private void Awake()
     {
         spawned = false;
@@ -18,6 +20,12 @@ public class MonsterController : PlayableEntity
     private void Update()
     {
         HandleMovement();
+        if (Input.GetKeyDown(KeyCode.Z))
+        {
+            target = FindFirstObjectByType<PlayerController>();
+            var position = target.transform.position;
+            transform.position = new Vector3(position.x - 10, 0.5f, position.z - 10);
+        }
     }
 
     private void OnTriggerEnter(Collider other)
@@ -26,7 +34,6 @@ public class MonsterController : PlayableEntity
 
         if (other.gameObject.CompareTag("Player") && spawned)
         {
-            Debug.Log($"[Server] Monster collided with a player at {transform.position}");
             PlayerController player = other.gameObject.GetComponent<PlayerController>();
             player.TakeDamage();
         }
@@ -51,5 +58,4 @@ public class MonsterController : PlayableEntity
     {
         spawned = true;
     }
-    
 }

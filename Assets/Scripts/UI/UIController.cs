@@ -8,6 +8,7 @@ public class UIController : MonoBehaviour
 
     [SerializeField] public GameOverScreen gameOverScreen;
     [SerializeField] public HPIndicatorController HPIndicatorController;
+    [SerializeField] public ProgressCounterController progressCounterController;
 
     private void Awake()
     {

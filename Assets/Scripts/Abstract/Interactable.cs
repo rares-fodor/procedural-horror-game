@@ -25,7 +25,7 @@ public abstract class Interactable : NetworkBehaviour
             if (!otherController.IsLocalPlayer) { return; }
             
             active = true;
-            GameController.PlayerInteractableTriggerToggle.Invoke(interactMessage);
+            GameController.Singleton.PlayerInteractableTriggerToggle.Invoke(interactMessage);
         }
     }
 
@@ -42,7 +42,7 @@ public abstract class Interactable : NetworkBehaviour
             if (active)
             {
                 active = false;
-                GameController.PlayerInteractableTriggerToggle.Invoke(interactMessage);
+                GameController.Singleton.PlayerInteractableTriggerToggle.Invoke(interactMessage);
             }
         }
     }
@@ -56,7 +56,7 @@ public abstract class Interactable : NetworkBehaviour
         if (!active)
         {
             active = true;
-            GameController.PlayerInteractableTriggerToggle.Invoke(interactMessage);
+            GameController.Singleton.PlayerInteractableTriggerToggle.Invoke(interactMessage);
         }
     }
 
@@ -69,7 +69,7 @@ public abstract class Interactable : NetworkBehaviour
         if (active)
         {
             active = false;
-            GameController.PlayerInteractableTriggerToggle.Invoke(Consts.EMPTY_STR);
+            GameController.Singleton.PlayerInteractableTriggerToggle.Invoke(Consts.EMPTY_STR);
         }
     }
 }

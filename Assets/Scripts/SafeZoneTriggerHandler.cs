@@ -5,11 +5,11 @@ public class SafeZoneTriggerHandler : MonoBehaviour
 {
     private void OnTriggerEnter(Collider other)
     {
-        GameController.PlayerSafeZoneToggle.Invoke();
+        GameController.Singleton.PlayerSafeZoneToggle.Invoke();
     }
 
     private void OnTriggerExit(Collider other)
     {
-        GameController.PlayerSafeZoneToggle.Invoke();
+        GameController.Singleton.PlayerSafeZoneToggle.Invoke();
     }
 }

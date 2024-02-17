@@ -20,16 +20,18 @@ public class NetworkGameController : NetworkBehaviour
     public UnityEvent<ulong> OnAllPlayersReadyToggle;       // ONLY INVOKE WITH SERVER'S CLIENTID
     public UnityEvent<ulong> OnMonsterToggle;
 
+    public NetworkVariable<bool> monsterTaken;
 
     [SerializeField] private NetworkList<PlayerListData> playerList;
     [SerializeField] private List<PlayerListEntry> playerEntries;
-
-    public NetworkVariable<bool> monsterTaken;
 
     private int playerReadyCount;
 
     [SerializeField] private Transform playerPrefab;
     [SerializeField] private Transform monsterPrefab;
+
+    private NetworkVariable<int> playersAlive = new NetworkVariable<int>();
+    private NetworkVariable<int> gameProgress = new NetworkVariable<int>();
 
     private enum PlayerDataValueToggle
     {
@@ -52,8 +54,10 @@ public class NetworkGameController : NetworkBehaviour
         playerList.OnListChanged += PlayerList_OnListChanged;
     }
 
-    private void Start()
+    public override void OnNetworkSpawn()
     {
+        playersAlive.OnValueChanged += PlayerKilledCallback;
+        gameProgress.OnValueChanged += GameProgressedCallback;
     }
 
     private void SceneManager_OnLoadEventCompleted(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
@@ -78,14 +82,12 @@ public class NetworkGameController : NetworkBehaviour
     {
         if (changeEvent.Type == NetworkListEvent<PlayerListData>.EventType.Add)
         {
-            Debug.Log("Change Event: Add");
-
             CreateAndAddPlayerListEntry(changeEvent.Value);
             return;
         }
         if (changeEvent.Type == NetworkListEvent<PlayerListData>.EventType.Remove)
         {
-            Debug.Log("Change Event: Remove");
+
             foreach (var entry in playerEntries)
             {
                 if (entry.clientId == changeEvent.Value.clientId)
@@ -301,6 +303,35 @@ public class NetworkGameController : NetworkBehaviour
         if (playerReadyCount == NetworkManager.Singleton.ConnectedClientsIds.Count)
         {
             OnAllPlayersReadyToggle.Invoke(NetworkManager.Singleton.LocalClientId);
+        }
+    }
+    public void NotifyPlayerKilled()
+    {
+        if (!IsServer) { return; }
+        playersAlive.Value -= 1;
+    }
+
+    public void NotifyGameProgressed()
+    {
+        if (!IsServer) { return; }
+        gameProgress.Value++;
+    }
+
+    private void PlayerKilledCallback(int prev, int current)
+    {
+        // TODO Update HUD to reflect players' status
+        Debug.Log($"{current} players remaining");
+        if (current == 0)
+        {
+            UIController.Singleton.gameOverScreen.GameOver("All players defeated! Game over!");
+        }
+    }
+    private void GameProgressedCallback(int prev, int curr)
+    {
+        UIController.Singleton.progressCounterController.DisplayGameProgress(curr);
+        if (curr == Consts.PILLAR_COUNT)
+        {
+            UIController.Singleton.gameOverScreen.GameOver("All pillars activated! Survivors win!");
         }
     }
 }
