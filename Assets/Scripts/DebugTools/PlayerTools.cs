@@ -18,7 +18,7 @@ public class PlayerTools : MonoBehaviour
 
     private void TeleportToNextStone()
     {
-        GameObject closest = GameController.GetClosestObject(transform.position);
+        GameObject closest = GameController.Singleton.GetClosestObject(transform.position);
         if (closest != null)
         {
             Debug.Log("Teleporting player!");

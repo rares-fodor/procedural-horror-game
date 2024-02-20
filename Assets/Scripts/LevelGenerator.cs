@@ -144,8 +144,6 @@ public class LevelGenerator : NetworkBehaviour
             seed.Value = (int) System.DateTime.Now.Ticks;
         }
 
-        Debug.Log("Spawning level generator");
-
         Random.InitState(seed.Value);
 
         MeshRenderer mr = gameObject.GetComponent<MeshRenderer>();
@@ -160,18 +158,21 @@ public class LevelGenerator : NetworkBehaviour
 
         // Spawn prefabs
         SpawnOriginPoint();
-        if (IsServer)
-        { 
-            SpawnPointsOfProgress();
+        SpawnPointsOfProgress();
+        SpawnPrefabsOnNoise();
+        
+        if (!IsServer)
+        {
+            // Destroy local pillars, GameController will get their reference when needed
+            spawnedPillars.ForEach(p => Destroy(p));
+            spawnedPillars.Clear();
         }
         else
         {
-            // If client, find all the pillars that were spawned by the network manager and pass them to the controller (needed for hints)
-            var pillars = FindObjectsOfType<PillarController>();
-            var pillarObjects = pillars.Select(p => p.gameObject).ToList();
-            GameController.SetPillarList(pillarObjects);
-        }
-        SpawnPrefabsOnNoise();
+            // Server spawns pillars
+            // On the clients, GameController will use these objects instead of the local ones that were destroyed prior.
+            spawnedPillars.ForEach((p) => p.GetComponent<NetworkObject>().Spawn());
+        } 
     }
 
     void Awake()
@@ -299,14 +300,13 @@ public class LevelGenerator : NetworkBehaviour
 
             if (canSpawn)
             {
-                GameObject newPillar = Instantiate(pointOfProgress, position, Quaternion.identity);
-                if (IsServer) { newPillar.GetComponent<NetworkObject>().Spawn(); }
-                spawnedPillars.Add(newPillar);
+                GameObject pillarObject = Instantiate(pointOfProgress, position, Quaternion.identity);
+                spawnedPillars.Add(pillarObject);
             }
         }
 
         // Update GameController stone reference list
-        GameController.SetPillarList(spawnedPillars);
+        GameController.Singleton.SetPillarList(spawnedPillars);
     }
 
     /// <summary>

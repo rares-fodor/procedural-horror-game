@@ -16,8 +16,10 @@ public class NPCController : Interactable
 
     protected override void OnTriggerExit(Collider other)
     {
+        if (!other.CompareTag("Player")) { return; }
         base.OnTriggerExit(other);
-        if (!dialogueFinished)
+
+        if (!dialogueFinished && other.gameObject == GameController.LocalPlayer)
         {
             // Cancel dialogue
             GameController.Singleton.DialogueStarted.Invoke(Consts.NPC_NAME, dialogue);
@@ -38,7 +40,7 @@ public class NPCController : Interactable
 
     private void Update()
     {
-        if (playersInTrigger.Count > 0)
+        if (playersInTrigger.Count > 0 && playersInTrigger.Contains(GameController.LocalPlayer))
         {
             if (Input.GetKeyDown(Consts.INTERACT_KEY) && dialogueFinished) 
                 StartDialogue();

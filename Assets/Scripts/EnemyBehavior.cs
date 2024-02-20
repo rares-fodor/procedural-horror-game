@@ -420,7 +420,7 @@ public class EnemyBehavior : MonoBehaviour
     {
         if (enemyAgent != null)
         {
-            GameObject closestStone = GameController.GetClosestObject(player.transform.position);
+            GameObject closestStone = GameController.Singleton.GetClosestObject(player.transform.position);
             if (closestStone != null)
             {
                 Vector3 target = GetRandomPoint(closestStone.transform.position);

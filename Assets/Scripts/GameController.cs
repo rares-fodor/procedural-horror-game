@@ -27,7 +27,7 @@ public class GameController : NetworkBehaviour
     // Players
     [HideInInspector] public  UnityEvent PlayerDied = new UnityEvent();
 
-    private static List<GameObject> pillars;
+    private List<GameObject> pillars;
     public static GameObject LocalPlayer;
 
     private NetworkVariable<int> playersAlive = new NetworkVariable<int>();
@@ -63,36 +63,38 @@ public class GameController : NetworkBehaviour
         }
     }
 
-    public static void RemovePillar(GameObject reference)
+    public void RemovePillar(GameObject reference)
     {
         pillars.Remove(reference);
     }
 
-    public static void SetPillarList(List<GameObject> pillars)
+    public void SetPillarList(List<GameObject> pillars)
     {
-        GameController.pillars = pillars;
+        this.pillars = pillars;
     }
 
-    public static GameObject GetClosestObject(Vector3 position)
+    public GameObject GetClosestObject(Vector3 position)
     {
-        if (pillars != null && pillars.Count > 0)
+        if (pillars == null || pillars.Count == 0)
         {
-            GameObject closest = pillars[0];
-            float leastDistance = Vector3.Distance(pillars[0].transform.position, position);
-
-            for (int i = 1; i < pillars.Count; i++)
-            {
-                float currentDistance = Vector3.Distance(pillars[i].transform.position, position);
-                if (currentDistance < leastDistance)
-                {
-                    leastDistance = currentDistance;
-                    closest = pillars[i];
-                }
-            }
-
-            return closest;
+            var pillarObjects = FindObjectsOfType<PillarController>();
+            pillars = pillarObjects.Select(p => p.gameObject).ToList();
         }
-        return null;
+
+        GameObject closest = pillars[0];
+        float leastDistance = Vector3.Distance(pillars[0].transform.position, position);
+
+        for (int i = 1; i < pillars.Count; i++)
+        {
+            float currentDistance = Vector3.Distance(pillars[i].transform.position, position);
+            if (currentDistance < leastDistance)
+            {
+                leastDistance = currentDistance;
+                closest = pillars[i];
+            }
+        }
+
+        return closest;
     }
 
     public void NotifyPlayerKilled()

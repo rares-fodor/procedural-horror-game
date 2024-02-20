@@ -61,7 +61,7 @@ public class PlayerController : PlayableEntity
 
     private void EnableHint()
     {
-        GameObject closest = GameController.GetClosestObject(transform.position);
+        GameObject closest = GameController.Singleton.GetClosestObject(transform.position);
         if (closest != null)
         {
             hintTarget = closest.transform.position;

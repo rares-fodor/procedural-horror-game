@@ -18,7 +18,7 @@ public class PillarController : Interactable
     [SerializeField] private NetworkVariable<float> progressTimer = new NetworkVariable<float>();
     private ProgressBar progressBar;
 
-    private bool interacting = false;
+    [SerializeField] private bool interacting = false;
     private Material dissolveMaterial;
 
     public PillarController() : base(Consts.INTERACT_MESSAGE) { }
@@ -87,13 +87,14 @@ public class PillarController : Interactable
                 interacting = false;
                 NotifyInteractStoppedServerRpc();
             }
-            progressBar.Progress = progressTimer.Value;
             progressBar.IsVisible = interacting;
+            progressBar.Progress = progressTimer.Value;
         }
         else if (interacting && !playersInTrigger.Contains(localPlayer))
         {
             interacting = false;
             NotifyInteractStoppedServerRpc();
+            progressBar.IsVisible = false;
         }
 
         if (!IsServer) { return; }
@@ -145,7 +146,7 @@ public class PillarController : Interactable
     private void CollectItemClientRpc()
     {
         // Remove pillar from global list
-        GameController.RemovePillar(gameObject);
+        GameController.Singleton.RemovePillar(gameObject);
         gameObject.SetActive(false);
 
         // NOTE: This will hide progress bars of players working on a different pillar.
