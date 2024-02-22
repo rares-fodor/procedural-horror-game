@@ -17,6 +17,8 @@ public class LobbyButtons : MonoBehaviour
     [SerializeField] private Button monsterButton;
     [SerializeField] private TMP_Text monsterButtonText;
 
+    [SerializeField] private Button nameChangeButton;
+
     [SerializeField] private TMP_Text serverIPText;
 
     private enum MonsterButtonState
@@ -50,6 +52,11 @@ public class LobbyButtons : MonoBehaviour
                 SetReadyButton();
                 NetworkGameController.Singleton.PlayerReadyToggleServerRpc(NetworkManager.Singleton.LocalClientId);
             }
+        });
+
+        nameChangeButton.onClick.AddListener(() =>
+        {
+            CanvasController.Singleton.SetActiveScreen(CanvasController.UIScreen.LobbyNameChange);
         });
 
         leaveButton.onClick.AddListener(() =>

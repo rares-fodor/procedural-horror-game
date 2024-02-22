@@ -15,6 +15,7 @@ public class CanvasController : MonoBehaviour
         LobbyMain,
         LobbyAddressInput,
         LobbySplash,
+        LobbyNameChange,
         // Append more here for new scenes use SceneScreen name convention
     }
 

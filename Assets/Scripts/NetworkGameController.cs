@@ -10,6 +10,7 @@ using Unity.VisualScripting;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System;
+using Unity.Collections;
 
 public class NetworkGameController : NetworkBehaviour
 {
@@ -50,6 +51,7 @@ public class NetworkGameController : NetworkBehaviour
     {
         Monster,
         Ready,
+        Name,
     }
 
     private void Awake()
@@ -235,7 +237,7 @@ public class NetworkGameController : NetworkBehaviour
         {
             OnAllPlayersReadyToggle.Invoke(NetworkManager.Singleton.LocalClientId);
         }
-        playerList.Add(new PlayerListData { clientId = clientId, monster = false, ready = false });
+        playerList.Add(new PlayerListData { clientId = clientId, monster = false, ready = false, name = string.Empty });
     }
 
     private void host_NetworkManager_OnClientDisconnectCallback(ulong clientId)
@@ -311,9 +313,14 @@ public class NetworkGameController : NetworkBehaviour
         var entry = Instantiate(playerListPrefab, playerListContainer.transform);
         
         entry.clientId = data.clientId;
-        entry.playerNameText.text = data.clientId.ToString();
+        entry.playerNameText.text = data.name.ToString();
         entry.monsterText.text = data.monster == true ? "Monster" : "Survivor";
         entry.readyText.text = data.ready == true ? "Ready" : "Not Ready";
+
+        if (data.name.ToString() == string.Empty)
+        {
+            entry.playerNameText.text = data.clientId.ToString();
+        }
 
         playerEntries.Add(entry);
     }
@@ -355,6 +362,7 @@ public class NetworkGameController : NetworkBehaviour
         modifiedPlayer.clientId = clientId;
         modifiedPlayer.monster = toggledValue == PlayerDataValueToggle.Monster ? !oldData.Value.monster : oldData.Value.monster;
         modifiedPlayer.ready = toggledValue == PlayerDataValueToggle.Ready ? !oldData.Value.ready : oldData.Value.ready;
+        modifiedPlayer.name = oldData.Value.name;
 
         playerList.Remove(oldData.Value);
         playerList.Insert(index, modifiedPlayer);
@@ -452,6 +460,39 @@ public class NetworkGameController : NetworkBehaviour
         var port = GetAvailablePort(7777);
         
         NetworkManager.Singleton.GetComponent<UnityTransport>().SetConnectionData(localAddress, port);
+    }
 
+    [ServerRpc(RequireOwnership = false)]
+    public void PlayerNameChangeServerRpc(ulong clientId, FixedString128Bytes name)
+    {
+        foreach (var player in playerList)
+        {
+            if (player.name == name)
+            {
+                ValidateNameChangeClientRpc(clientId, false);
+                return;
+            }
+        }
+
+        var oldData = GetPlayerListDataByClientId(clientId);
+        var index = playerList.IndexOf(oldData.Value);
+
+        var modifiedPlayer = new PlayerListData();
+        modifiedPlayer.clientId = clientId;
+        modifiedPlayer.ready = oldData.Value.ready;
+        modifiedPlayer.monster = oldData.Value.monster;
+        modifiedPlayer.name = name;
+
+        playerList.Remove(oldData.Value);
+        playerList.Insert(index, modifiedPlayer);
+
+        ValidateNameChangeClientRpc(clientId, true);
+    }
+
+    [ClientRpc]
+    private void ValidateNameChangeClientRpc(ulong clientId, bool valid)
+    {
+        if (NetworkManager.Singleton.LocalClientId != clientId) { return; }
+        NameChangeMenuUI.Singleton.ValidateName(valid);
     }
 }
