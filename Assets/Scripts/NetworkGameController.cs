@@ -97,13 +97,7 @@ public class NetworkGameController : NetworkBehaviour
         }
         if (changeEvent.Type == NetworkListEvent<PlayerListData>.EventType.Clear)
         {
-            while (playerEntries.Count > 0)
-            {
-                Destroy(playerEntries[playerEntries.Count - 1].gameObject);
-                playerEntries.RemoveAt(playerEntries.Count - 1);
-            }
-            playerEntries.Clear();
-            return;
+            DestroyEntriesAndClearList();
         }
         if (changeEvent.Type == NetworkListEvent<PlayerListData>.EventType.Remove)
         {
@@ -139,7 +133,7 @@ public class NetworkGameController : NetworkBehaviour
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.F6)) {
-            Debug.Log($"There are {playerList.Count} clients connected");
+            Debug.Log($"There are {playerList.Count} in the player list and {NetworkManager.Singleton.ConnectedClientsIds.Count} connected");
             foreach(var player in playerList) {
                 Debug.Log($"ID: {player.clientId}, Monster: {player.monster}");
             }
@@ -189,16 +183,29 @@ public class NetworkGameController : NetworkBehaviour
         {
             NetworkManager.Singleton.OnClientConnectedCallback -= client_NetworkManager_OnClientConnectedCallback;
             NetworkManager.Singleton.OnClientDisconnectCallback -= client_NetworkManager_OnClientDisconnectCallback;
+            Debug.Log("Shutdown client...");
         }
         else if (playerNetworkFunction == NetworkFunction.Server)
         {
+            HostShutdownClientRpc();
             playerList.Clear();
             NetworkManager.Singleton.ConnectionApprovalCallback -= NetworkManager_ConnectionApprovalCallback;
             NetworkManager.Singleton.OnClientConnectedCallback -= host_NetworkManager_OnClientConnectedCallback;
             NetworkManager.Singleton.OnClientDisconnectCallback -= host_NetworkManager_OnClientDisconnectCallback;
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= SceneManager_OnLoadEventCompleted;
+            Debug.Log("Shutdown server...");
         }
+        DestroyEntriesAndClearList();
         NetworkManager.Singleton.Shutdown();
+    }
+
+    [ClientRpc]
+    private void HostShutdownClientRpc()
+    {
+        if (playerNetworkFunction == NetworkFunction.Server) { return; }
+        Debug.Log("Host has left the lobby, disconnecting...");
+        Shutdown();
+        CanvasController.Singleton.SetActiveScreen(CanvasController.UIScreen.LobbyJoinCreate);
     }
 
     private void host_NetworkManager_OnClientConnectedCallback(ulong clientId)
@@ -210,6 +217,12 @@ public class NetworkGameController : NetworkBehaviour
         foreach (var entry in playerList)
         {
             Debug.Log($"{entry.clientId}, {entry.monster}");
+        }
+
+        if (NetworkManager.Singleton.ConnectedClientsIds.Count == 1)
+        {
+            Debug.Log("Clearing playerlist");
+            playerList.Clear();
         }
 
         if (playerReadyCount > 0 && playerReadyCount == playerList.Count)
@@ -246,7 +259,6 @@ public class NetworkGameController : NetworkBehaviour
 
     private void client_NetworkManager_OnClientConnectedCallback(ulong clientId)
     {
-        Debug.Log($"{playerList.Count}");
         foreach (var player in playerList)
         {
             CreateAndAddPlayerListEntry(player);
@@ -399,5 +411,16 @@ public class NetworkGameController : NetworkBehaviour
         }
         Debug.LogError("No network adapter with IPv4 address was found!");
         return null;
-    } 
+    }
+
+    private void DestroyEntriesAndClearList()
+    {
+        while (playerEntries.Count > 0)
+            {
+                Destroy(playerEntries[playerEntries.Count - 1].gameObject);
+                playerEntries.RemoveAt(playerEntries.Count - 1);
+            }
+            playerEntries.Clear();
+            return;
+    }
 }
