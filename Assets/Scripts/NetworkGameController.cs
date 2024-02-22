@@ -203,9 +203,12 @@ public class NetworkGameController : NetworkBehaviour
     private void HostShutdownClientRpc()
     {
         if (playerNetworkFunction == NetworkFunction.Server) { return; }
+
         Debug.Log("Host has left the lobby, disconnecting...");
         Shutdown();
-        CanvasController.Singleton.SetActiveScreen(CanvasController.UIScreen.LobbyJoinCreate);
+        
+        SplashScreenUI.Singleton.SetMessage("Host disconnected, returning to main menu");
+        CanvasController.Singleton.SetActiveScreen(CanvasController.UIScreen.LobbySplash);
     }
 
     private void host_NetworkManager_OnClientConnectedCallback(ulong clientId)

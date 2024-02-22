@@ -17,8 +17,8 @@ public class JoiningScreenController : MonoBehaviour
         gameObject.SetActive(false);
         backButton.onClick.AddListener(() =>
         {
+            NetworkGameController.Singleton.Shutdown();
             CanvasController.Singleton.SetActiveScreen(CanvasController.UIScreen.LobbyJoinCreate);
-            // Interrupt connection if handling it
         });
     }
 
