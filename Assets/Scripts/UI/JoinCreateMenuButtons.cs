@@ -11,7 +11,6 @@ public class JoinCreateMenuButtons : MonoBehaviour
     [SerializeField] private Button createGameButton;
     [SerializeField] private Button joinGameButton;
 
-
     private void Awake()
     {
         createGameButton.onClick.AddListener(() =>
@@ -23,9 +22,10 @@ public class JoinCreateMenuButtons : MonoBehaviour
 
         joinGameButton.onClick.AddListener(() =>
         {
-            Debug.Log("Client started!");
-            NetworkGameController.Singleton.StartClient();
-            CanvasController.Singleton.SetActiveScreen(CanvasController.UIScreen.LobbyJoining);
+            // Debug.Log("Client started!");
+            // NetworkGameController.Singleton.StartClient();
+            // CanvasController.Singleton.SetActiveScreen(CanvasController.UIScreen.LobbyJoining);
+            CanvasController.Singleton.SetActiveScreen(CanvasController.UIScreen.LobbyAddressInput);
         });
 
         backButton.onClick.AddListener(() =>

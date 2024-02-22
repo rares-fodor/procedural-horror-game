@@ -4,11 +4,10 @@ using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
+using Unity.Netcode.Transports.UTP;
 
 public class LobbyButtons : MonoBehaviour
 {
-
-    // [TODO] Implement leave
     [SerializeField] private Button leaveButton;
     [SerializeField] private Button changeNameButton;
 
@@ -17,6 +16,8 @@ public class LobbyButtons : MonoBehaviour
 
     [SerializeField] private Button monsterButton;
     [SerializeField] private TMP_Text monsterButtonText;
+
+    [SerializeField] private TMP_Text serverIPText;
 
     private enum MonsterButtonState
     {
@@ -51,6 +52,11 @@ public class LobbyButtons : MonoBehaviour
             }
         });
 
+        leaveButton.onClick.AddListener(() =>
+        {
+            CanvasController.Singleton.SetActiveScreen(CanvasController.UIScreen.LobbyJoinCreate);    
+        });
+
         monsterButtonText.text = "Play Monster";
         monsterButton.interactable = true;
 
@@ -67,6 +73,7 @@ public class LobbyButtons : MonoBehaviour
         NetworkGameController.Singleton.OnMonsterToggle.AddListener(NetworkGameController_OnMonsterToggle);
         NetworkGameController.Singleton.OnClientConnected.AddListener(NetworkGameController_OnClientConnected);
         NetworkGameController.Singleton.OnAllPlayersReadyToggle.AddListener(NetworkGameController_OnAllPlayersReadyToggle);
+        NetworkGameController.Singleton.OnHostStarted.AddListener(NetworkGameController_OnHostStarted);
     }
 
     private void OnDestroy()
@@ -89,6 +96,11 @@ public class LobbyButtons : MonoBehaviour
         }
     }
 
+    private void NetworkGameController_OnHostStarted()
+    {
+        serverIPText.text = $"Game hosted at {NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Address}";
+    }
+
     private void NetworkGameController_OnClientConnected()
     {
         // Treats joining a lobby after the monster has been taken.
@@ -96,6 +108,7 @@ public class LobbyButtons : MonoBehaviour
         {
             monsterButton.interactable = false;
         }
+        serverIPText.text = $"Game hosted at {NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Address}";
     }
 
     private void NetworkGameController_OnAllPlayersReadyToggle(ulong clientId)

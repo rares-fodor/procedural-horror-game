@@ -13,6 +13,7 @@ public class CanvasController : MonoBehaviour
         LobbyJoining,
         LobbyJoinCreate,
         LobbyMain,
+        LobbyAddressInput,
         // Append more here for new scenes use SceneScreen name convention
     }
 

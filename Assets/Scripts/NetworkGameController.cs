@@ -1,11 +1,11 @@
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Events;
-using System;
 using System.Collections.Generic;
-using UnityEditor;
-using Unity.VisualScripting;
 using UnityEngine.SceneManagement;
+using System.Net;
+using System.Net.Sockets;
+using Unity.Netcode.Transports.UTP;
 
 public class NetworkGameController : NetworkBehaviour
 {
@@ -17,6 +17,7 @@ public class NetworkGameController : NetworkBehaviour
 
     public UnityEvent OnClientFailedToJoin;
     public UnityEvent OnClientConnected;
+    public UnityEvent OnHostStarted;
     public UnityEvent<ulong> OnAllPlayersReadyToggle;       // ONLY INVOKE WITH SERVER'S CLIENTID
     public UnityEvent<ulong> OnMonsterToggle;
 
@@ -44,6 +45,7 @@ public class NetworkGameController : NetworkBehaviour
         Singleton = this;
         OnClientFailedToJoin = new UnityEvent();
         OnClientConnected = new UnityEvent();
+        OnHostStarted = new UnityEvent();
         OnAllPlayersReadyToggle = new UnityEvent<ulong>();
         OnMonsterToggle = new UnityEvent<ulong>();
         monsterTaken = new NetworkVariable<bool>();
@@ -119,7 +121,7 @@ public class NetworkGameController : NetworkBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Space)) {
+        if (Input.GetKeyDown(KeyCode.F6)) {
             Debug.Log($"There are {playerList.Count} clients connected");
             foreach(var player in playerList) {
                 Debug.Log($"ID: {player.clientId}, Monster: {player.monster}");
@@ -145,10 +147,14 @@ public class NetworkGameController : NetworkBehaviour
         
         NetworkManager.Singleton.OnClientConnectedCallback += host_NetworkManager_OnClientConnectedCallback;
         NetworkManager.Singleton.OnClientDisconnectCallback += host_NetworkManager_OnClientDisconnectCallback;
-        
+
+        var localAddress = GetLocalIPv4Address();
+        NetworkManager.Singleton.GetComponent<UnityTransport>().SetConnectionData(localAddress, 7777);
+
         NetworkManager.Singleton.StartHost();
         NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += SceneManager_OnLoadEventCompleted;
         monsterTaken.Value = false;
+        OnHostStarted.Invoke();
     }
 
     public void StartClient()
@@ -334,4 +340,18 @@ public class NetworkGameController : NetworkBehaviour
             UIController.Singleton.gameOverScreen.GameOver("All pillars activated! Survivors win!");
         }
     }
+
+    private string GetLocalIPv4Address()
+    {
+        var host = Dns.GetHostEntry(Dns.GetHostName());
+        foreach (var addr in host.AddressList)
+        {
+            if (addr.AddressFamily == AddressFamily.InterNetwork)
+            {
+                return addr.ToString();
+            }
+        }
+        Debug.LogError("No network adapter with IPv4 address was found!");
+        return null;
+    } 
 }
