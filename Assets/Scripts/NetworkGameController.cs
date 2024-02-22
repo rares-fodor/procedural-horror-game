@@ -34,6 +34,14 @@ public class NetworkGameController : NetworkBehaviour
     private NetworkVariable<int> playersAlive = new NetworkVariable<int>();
     private NetworkVariable<int> gameProgress = new NetworkVariable<int>();
 
+    private enum NetworkFunction
+    {
+        Server,
+        Client
+    }
+
+    private NetworkFunction playerNetworkFunction;
+
     private enum PlayerDataValueToggle
     {
         Monster,
@@ -87,9 +95,18 @@ public class NetworkGameController : NetworkBehaviour
             CreateAndAddPlayerListEntry(changeEvent.Value);
             return;
         }
+        if (changeEvent.Type == NetworkListEvent<PlayerListData>.EventType.Clear)
+        {
+            while (playerEntries.Count > 0)
+            {
+                Destroy(playerEntries[playerEntries.Count - 1].gameObject);
+                playerEntries.RemoveAt(playerEntries.Count - 1);
+            }
+            playerEntries.Clear();
+            return;
+        }
         if (changeEvent.Type == NetworkListEvent<PlayerListData>.EventType.Remove)
         {
-
             foreach (var entry in playerEntries)
             {
                 if (entry.clientId == changeEvent.Value.clientId)
@@ -143,8 +160,9 @@ public class NetworkGameController : NetworkBehaviour
 
     public void StartHost()
     {
+        playerNetworkFunction = NetworkFunction.Server;
+
         NetworkManager.Singleton.ConnectionApprovalCallback += NetworkManager_ConnectionApprovalCallback;
-        
         NetworkManager.Singleton.OnClientConnectedCallback += host_NetworkManager_OnClientConnectedCallback;
         NetworkManager.Singleton.OnClientDisconnectCallback += host_NetworkManager_OnClientDisconnectCallback;
 
@@ -159,13 +177,41 @@ public class NetworkGameController : NetworkBehaviour
 
     public void StartClient()
     {
+        playerNetworkFunction = NetworkFunction.Client;
         NetworkManager.Singleton.OnClientConnectedCallback += client_NetworkManager_OnClientConnectedCallback;
         NetworkManager.Singleton.OnClientDisconnectCallback += client_NetworkManager_OnClientDisconnectCallback;
         NetworkManager.Singleton.StartClient();
     }
 
+    public void Shutdown()
+    {
+        if (playerNetworkFunction == NetworkFunction.Client)
+        {
+            NetworkManager.Singleton.OnClientConnectedCallback -= client_NetworkManager_OnClientConnectedCallback;
+            NetworkManager.Singleton.OnClientDisconnectCallback -= client_NetworkManager_OnClientDisconnectCallback;
+        }
+        else if (playerNetworkFunction == NetworkFunction.Server)
+        {
+            playerList.Clear();
+            NetworkManager.Singleton.ConnectionApprovalCallback -= NetworkManager_ConnectionApprovalCallback;
+            NetworkManager.Singleton.OnClientConnectedCallback -= host_NetworkManager_OnClientConnectedCallback;
+            NetworkManager.Singleton.OnClientDisconnectCallback -= host_NetworkManager_OnClientDisconnectCallback;
+            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= SceneManager_OnLoadEventCompleted;
+        }
+        NetworkManager.Singleton.Shutdown();
+    }
+
     private void host_NetworkManager_OnClientConnectedCallback(ulong clientId)
     {
+        foreach (var entry in playerEntries)
+        {
+            Debug.Log($"{entry.playerNameText}, {entry.monsterText}");
+        }
+        foreach (var entry in playerList)
+        {
+            Debug.Log($"{entry.clientId}, {entry.monster}");
+        }
+
         if (playerReadyCount > 0 && playerReadyCount == playerList.Count)
         {
             OnAllPlayersReadyToggle.Invoke(NetworkManager.Singleton.LocalClientId);

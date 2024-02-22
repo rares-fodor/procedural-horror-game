@@ -54,6 +54,7 @@ public class LobbyButtons : MonoBehaviour
 
         leaveButton.onClick.AddListener(() =>
         {
+            NetworkGameController.Singleton.Shutdown();
             CanvasController.Singleton.SetActiveScreen(CanvasController.UIScreen.LobbyJoinCreate);    
         });
 
