@@ -99,7 +99,7 @@ public class LobbyButtons : MonoBehaviour
 
     private void NetworkGameController_OnHostStarted()
     {
-        serverIPText.text = $"Game hosted at {NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Address}";
+        SetConnectionMessage();
     }
 
     private void NetworkGameController_OnClientConnected()
@@ -109,7 +109,7 @@ public class LobbyButtons : MonoBehaviour
         {
             monsterButton.interactable = false;
         }
-        serverIPText.text = $"Game hosted at {NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Address}";
+        SetConnectionMessage();
     }
 
     private void NetworkGameController_OnAllPlayersReadyToggle(ulong clientId)
@@ -156,5 +156,13 @@ public class LobbyButtons : MonoBehaviour
         {
             readyButtonText.text = "Ready";
         }
+    }
+
+    private void SetConnectionMessage()
+    {
+        var connectionData = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData;
+        var address = connectionData.Address;
+        var port = connectionData.Port;
+        serverIPText.text = $"Game hosted at {address}:{port}";
     }
 }

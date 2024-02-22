@@ -8,25 +8,31 @@ using System.Net;
 
 public class AddressMenuUI : MonoBehaviour
 {
-    [SerializeField] private TMP_InputField inputField;
+    [SerializeField] private TMP_InputField inputFieldAddress;
+    [SerializeField] private TMP_InputField inputFieldPort;
 
     [SerializeField] private Button joinButton;
     [SerializeField] private Button backButton;
 
-    [SerializeField] private TMP_Text diagnosticText;
+    [SerializeField] private TMP_Text diagnosticTextAddr;
+    [SerializeField] private TMP_Text diagnosticTextPort;
 
     private IPAddress ipAddress;
-    private bool validated = false;
+    private ushort port;
+    private bool validatedAddr = false;
+    private bool validatedPort = false;
 
     private UnityTransport netcodeTransport;
 
     private void Awake()
     {
-        inputField.onEndEdit.AddListener(AddressInput_OnEndEdit);
+        inputFieldAddress.onEndEdit.AddListener(AddressInput_OnEndEdit);
+        inputFieldPort.onEndEdit.AddListener(PortInput_OnEndEdit);
         joinButton.onClick.AddListener(JoinButton_OnClick);
         backButton.onClick.AddListener(BackButton_OnClick);
 
-        diagnosticText.text = string.Empty;
+        diagnosticTextAddr.text = string.Empty;
+        diagnosticTextPort.text = string.Empty;
     }
 
     private void Start()
@@ -37,18 +43,30 @@ public class AddressMenuUI : MonoBehaviour
     private void AddressInput_OnEndEdit(string input)
     {
         // Fires when pressing either Enter buttons, Esc or when clicking out of the input field
-        validated = IPAddress.TryParse(input, out ipAddress) && ipAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork;
+        validatedAddr = IPAddress.TryParse(input, out ipAddress) && ipAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork;
+    }
+
+    private void PortInput_OnEndEdit(string input)
+    {
+        validatedPort = ushort.TryParse(input, out port);
     }
 
     private void JoinButton_OnClick()
     {
-        if (!validated)
+        if (!validatedAddr)
         {
-            diagnosticText.text = "Value is not valid, try again";
+            diagnosticTextAddr.text = "Address is not valid, try again";
             return;
         }
-        Debug.Log(ipAddress.ToString());
-        netcodeTransport.SetConnectionData(ipAddress.ToString(), 7777);
+        if (!validatedPort)
+        {
+            diagnosticTextPort.text = "Port is not valid, try again";
+            return;
+        }
+
+        Debug.Log($"Connecting to: {ipAddress}:{port}");
+        netcodeTransport.SetConnectionData(ipAddress.ToString(), port);
+
         NetworkGameController.Singleton.StartClient();
         CanvasController.Singleton.SetActiveScreen(CanvasController.UIScreen.LobbyJoining);
     }

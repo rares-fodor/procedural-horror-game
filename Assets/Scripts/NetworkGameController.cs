@@ -6,6 +6,10 @@ using UnityEngine.SceneManagement;
 using System.Net;
 using System.Net.Sockets;
 using Unity.Netcode.Transports.UTP;
+using Unity.VisualScripting;
+using System.Linq;
+using System.Net.NetworkInformation;
+using System;
 
 public class NetworkGameController : NetworkBehaviour
 {
@@ -160,8 +164,7 @@ public class NetworkGameController : NetworkBehaviour
         NetworkManager.Singleton.OnClientConnectedCallback += host_NetworkManager_OnClientConnectedCallback;
         NetworkManager.Singleton.OnClientDisconnectCallback += host_NetworkManager_OnClientDisconnectCallback;
 
-        var localAddress = GetLocalIPv4Address();
-        NetworkManager.Singleton.GetComponent<UnityTransport>().SetConnectionData(localAddress, 7777);
+        ServerSetConnectionParameters();
 
         NetworkManager.Singleton.StartHost();
         NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += SceneManager_OnLoadEventCompleted;
@@ -401,6 +404,16 @@ public class NetworkGameController : NetworkBehaviour
             UIController.Singleton.gameOverScreen.GameOver("All pillars activated! Survivors win!");
         }
     }
+    private void DestroyEntriesAndClearList()
+    {
+        while (playerEntries.Count > 0)
+        {
+            Destroy(playerEntries[playerEntries.Count - 1].gameObject);
+            playerEntries.RemoveAt(playerEntries.Count - 1);
+        }
+        playerEntries.Clear();
+        return;
+    }
 
     private string GetLocalIPv4Address()
     {
@@ -416,14 +429,29 @@ public class NetworkGameController : NetworkBehaviour
         return null;
     }
 
-    private void DestroyEntriesAndClearList()
+    // SOURCE: https://gist.github.com/jrusbatch/4211535?permalink_comment_id=3504205#gistcomment-3504205
+    private ushort GetAvailablePort(int startingPort)
     {
-        while (playerEntries.Count > 0)
-            {
-                Destroy(playerEntries[playerEntries.Count - 1].gameObject);
-                playerEntries.RemoveAt(playerEntries.Count - 1);
-            }
-            playerEntries.Clear();
-            return;
+        if (startingPort > ushort.MaxValue) throw new ArgumentException($"Can't be greater than {ushort.MaxValue}", nameof(startingPort));
+
+        var ipGlobalProperties = IPGlobalProperties.GetIPGlobalProperties();
+
+        var connectionsEndpoints = ipGlobalProperties.GetActiveTcpConnections().Select(c => c.LocalEndPoint);
+        var tcpListenersEndpoints = ipGlobalProperties.GetActiveTcpListeners();
+        var udpListenersEndpoints = ipGlobalProperties.GetActiveUdpListeners();
+        var portsInUse = connectionsEndpoints.Concat(tcpListenersEndpoints)
+                                             .Concat(udpListenersEndpoints)
+                                             .Select(e => e.Port);
+
+        return (ushort) Enumerable.Range(startingPort, ushort.MaxValue - startingPort + 1).Except(portsInUse).FirstOrDefault();
+    }
+
+    private void ServerSetConnectionParameters()
+    {
+        var localAddress = GetLocalIPv4Address();
+        var port = GetAvailablePort(7777);
+        
+        NetworkManager.Singleton.GetComponent<UnityTransport>().SetConnectionData(localAddress, port);
+
     }
 }
