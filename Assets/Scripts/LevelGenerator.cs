@@ -172,7 +172,10 @@ public class LevelGenerator : NetworkBehaviour
             // Server spawns pillars
             // On the clients, GameController will use these objects instead of the local ones that were destroyed prior.
             spawnedPillars.ForEach((p) => p.GetComponent<NetworkObject>().Spawn());
-        } 
+        }
+
+        // Reset Random state, avoid unwanted syncronicity between server and clients
+        Random.InitState((int) System.DateTime.Now.Ticks);
     }
 
     void Awake()

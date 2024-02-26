@@ -3,12 +3,16 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using System;
+using TMPro;
+using Unity.Collections;
 
 public abstract class PlayableEntity : NetworkBehaviour
 {
     [SerializeField] protected float speed;
     [SerializeField] protected Camera camera;
     [SerializeField] protected GameObject cameraToggle;
+
+    [SerializeField] protected TMP_Text playerNameText;
 
     public override void OnNetworkSpawn()
     {
@@ -73,5 +77,11 @@ public abstract class PlayableEntity : NetworkBehaviour
 
         Vector3 direction = (forwardRelative + rightRelative).normalized;
         transform.position += direction * speed * Time.deltaTime;
+    }
+
+    protected void PlayerName_OnValueChanged(FixedString128Bytes prev, FixedString128Bytes current)
+    {
+        Debug.Log($"setting name to {current}");
+        playerNameText.text = current.ToString();
     }
 }

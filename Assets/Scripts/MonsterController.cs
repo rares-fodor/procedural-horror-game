@@ -1,12 +1,8 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Globalization;
 using UnityEngine;
 using Unity.Netcode;
 
 public class MonsterController : PlayableEntity
 {
-    private GameController gameController;
     [SerializeField] private bool spawned;
 
     private PlayerController target;
@@ -14,7 +10,14 @@ public class MonsterController : PlayableEntity
     private void Awake()
     {
         spawned = false;
-        gameController = FindObjectOfType<GameController>();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        playerNameText.text = NetworkGameController.Singleton.GetPlayerListDataByClientId(OwnerClientId).Value.name.ToString();
+
+        if (!IsOwner) { return; }
+        base.OnNetworkSpawn();
     }
 
     private void Update()

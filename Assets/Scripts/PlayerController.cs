@@ -8,6 +8,7 @@ using UnityEngine;
 public class PlayerController : PlayableEntity
 {
     [SerializeField] private GameObject indicator;
+
     public NetworkVariable<bool> isAlive = new NetworkVariable<bool>();
 
     // Hint stuff
@@ -28,11 +29,15 @@ public class PlayerController : PlayableEntity
     public override void OnNetworkSpawn()
     {
         Debug.Log("Moved player to spawnpoint");
+        playerNameText.text = NetworkGameController.Singleton.GetPlayerListDataByClientId(OwnerClientId).Value.name.ToString();
+
         if (IsServer)
         {
             isAlive.Value = true;
             hitPoints.Value = Consts.PLAYER_MAX_HP;
+            // playerName.Value = NetworkGameController.Singleton.GetPlayerListDataByClientId(OwnerClientId).Value.name;
         }
+
         if (!IsOwner) { return; }
         base.OnNetworkSpawn();
         GameController.LocalPlayer = gameObject;
@@ -94,7 +99,6 @@ public class PlayerController : PlayableEntity
         float spawnZ = Random.Range(-20, 20);
         return new Vector3(spawnX, 0.5f, spawnZ);
     }
-
     public void TakeDamage()
     {
         if (!IsServer) { return; }

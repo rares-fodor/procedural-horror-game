@@ -76,12 +76,13 @@ public class NetworkGameController : NetworkBehaviour
         gameProgress.OnValueChanged += GameProgressedCallback;
     }
 
-    private void SceneManager_OnLoadEventCompleted(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+    private void SceneManager_OnLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
         foreach (var clientId in NetworkManager.ConnectedClientsIds)
         {
             Transform playerTransform;
-            if (GetPlayerListDataByClientId(clientId).Value.monster)
+            var data = GetPlayerListDataByClientId(clientId);
+            if (data.Value.monster)
             {
                 playerTransform = Instantiate(monsterPrefab);
             }
@@ -89,7 +90,7 @@ public class NetworkGameController : NetworkBehaviour
             {
                 playerTransform = Instantiate(playerPrefab);
             }
-
+;
             playerTransform.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId, true);
         }
     }
