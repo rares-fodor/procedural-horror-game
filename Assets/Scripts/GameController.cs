@@ -53,15 +53,6 @@ public class GameController : NetworkBehaviour
         gameProgress.OnValueChanged -= GameProgressedCallback;
     }
 
-    private void PlayerKilledCallback(int prev, int current)
-    {
-        // TODO Update HUD to reflect players' status
-        Debug.Log($"{current} players remaining");
-        if (current == 0)
-        {
-            UIController.Singleton.gameOverScreen.GameOver("All players defeated! Game over!");
-        }
-    }
 
     public void RemovePillar(GameObject reference)
     {
@@ -101,6 +92,16 @@ public class GameController : NetworkBehaviour
     {
         if (!IsServer) { return; }
         playersAlive.Value -= 1;
+    }
+
+    private void PlayerKilledCallback(int prev, int current)
+    {
+        // TODO Update HUD to reflect players' status
+        Debug.Log($"{current} players remaining");
+        if (current == 0)
+        {
+            UIController.Singleton.gameOverScreen.GameOver("All players defeated! Game over!");
+        }
     }
 
     public void NotifyGameProgressed()

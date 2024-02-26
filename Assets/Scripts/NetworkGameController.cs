@@ -32,6 +32,7 @@ public class NetworkGameController : NetworkBehaviour
     [SerializeField] private List<PlayerListEntry> playerEntries;
 
     private int playerReadyCount;
+    private bool gameStartedServer = false;
 
     [SerializeField] private Transform playerPrefab;
     [SerializeField] private Transform monsterPrefab;
@@ -56,7 +57,15 @@ public class NetworkGameController : NetworkBehaviour
 
     private void Awake()
     {
-        Singleton = this;
+        if (Singleton == null)
+        {
+            Singleton = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else if (Singleton != this)
+        {
+            Destroy(gameObject);
+        }
         OnClientFailedToJoin = new UnityEvent();
         OnClientConnected = new UnityEvent();
         OnHostStarted = new UnityEvent();
@@ -64,7 +73,6 @@ public class NetworkGameController : NetworkBehaviour
         OnMonsterToggle = new UnityEvent<ulong>();
         monsterTaken = new NetworkVariable<bool>();
 
-        DontDestroyOnLoad(gameObject);
 
         playerList = new NetworkList<PlayerListData>();
         playerList.OnListChanged += PlayerList_OnListChanged;
@@ -78,20 +86,30 @@ public class NetworkGameController : NetworkBehaviour
 
     private void SceneManager_OnLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
-        foreach (var clientId in NetworkManager.ConnectedClientsIds)
+        if (sceneName == GameSceneController.Singleton.menuSceneName)
         {
-            Transform playerTransform;
-            var data = GetPlayerListDataByClientId(clientId);
-            if (data.Value.monster)
+            Debug.Log("Loaded lobby scene");
+            playerListContainer = GameObject.Find("PlayerListContainer");
+            Shutdown();
+            gameStartedServer = false;
+        }
+        else if (sceneName == GameSceneController.Singleton.gameSceneName && playerNetworkFunction == NetworkFunction.Server)
+        {
+            foreach (var clientId in NetworkManager.ConnectedClientsIds)
             {
-                playerTransform = Instantiate(monsterPrefab);
-            }
-            else
-            {
-                playerTransform = Instantiate(playerPrefab);
-            }
+                Transform playerTransform;
+                var data = GetPlayerListDataByClientId(clientId);
+                if (data.Value.monster)
+                {
+                    playerTransform = Instantiate(monsterPrefab);
+                }
+                else
+                {
+                    playerTransform = Instantiate(playerPrefab);
+                }
 ;
-            playerTransform.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId, true);
+                playerTransform.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId, true);
+            }
         }
     }
 
@@ -112,9 +130,12 @@ public class NetworkGameController : NetworkBehaviour
             {
                 if (entry.clientId == changeEvent.Value.clientId)
                 {
-                    playerEntries.Remove(entry);
-                    Destroy(entry.gameObject);
-                    return;
+                    if (entry != null)
+                    {
+                        playerEntries.Remove(entry);
+                        Destroy(entry.gameObject);
+                        return;
+                    }
                 }
             }
             return;
@@ -152,6 +173,7 @@ public class NetworkGameController : NetworkBehaviour
         if (playerReadyCount == playerList.Count)
         {
             GameSceneController.Singleton.LoadGameScene();
+            gameStartedServer = true;
         }
         else
         {
@@ -171,7 +193,9 @@ public class NetworkGameController : NetworkBehaviour
 
         NetworkManager.Singleton.StartHost();
         NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += SceneManager_OnLoadEventCompleted;
+        
         monsterTaken.Value = false;
+        playerReadyCount = 0;
         OnHostStarted.Invoke();
     }
 
@@ -180,7 +204,9 @@ public class NetworkGameController : NetworkBehaviour
         playerNetworkFunction = NetworkFunction.Client;
         NetworkManager.Singleton.OnClientConnectedCallback += client_NetworkManager_OnClientConnectedCallback;
         NetworkManager.Singleton.OnClientDisconnectCallback += client_NetworkManager_OnClientDisconnectCallback;
+
         NetworkManager.Singleton.StartClient();
+        NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += SceneManager_OnLoadEventCompleted;
     }
 
     public void Shutdown()
@@ -189,11 +215,15 @@ public class NetworkGameController : NetworkBehaviour
         {
             NetworkManager.Singleton.OnClientConnectedCallback -= client_NetworkManager_OnClientConnectedCallback;
             NetworkManager.Singleton.OnClientDisconnectCallback -= client_NetworkManager_OnClientDisconnectCallback;
+            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= SceneManager_OnLoadEventCompleted;
             Debug.Log("Shutdown client...");
         }
         else if (playerNetworkFunction == NetworkFunction.Server)
         {
-            HostShutdownClientRpc();
+            if (!gameStartedServer)
+            {
+                HostShutdownClientRpc();
+            }
             playerList.Clear();
             NetworkManager.Singleton.ConnectionApprovalCallback -= NetworkManager_ConnectionApprovalCallback;
             NetworkManager.Singleton.OnClientConnectedCallback -= host_NetworkManager_OnClientConnectedCallback;
@@ -417,7 +447,11 @@ public class NetworkGameController : NetworkBehaviour
     {
         while (playerEntries.Count > 0)
         {
-            Destroy(playerEntries[playerEntries.Count - 1].gameObject);
+            var entry = playerEntries[playerEntries.Count - 1];
+            if (entry != null)
+            {
+                Destroy(entry.gameObject);
+            }
             playerEntries.RemoveAt(playerEntries.Count - 1);
         }
         playerEntries.Clear();

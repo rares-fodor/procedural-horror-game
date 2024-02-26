@@ -28,8 +28,8 @@ public class LobbyButtons : MonoBehaviour
     }
 
     private MonsterButtonState monsterState;
-    private bool allPlayersReady;
-    private bool localPlayerReady;
+    [SerializeField] private bool allPlayersReady;
+    [SerializeField] private bool localPlayerReady;
 
     private void Awake()
     {

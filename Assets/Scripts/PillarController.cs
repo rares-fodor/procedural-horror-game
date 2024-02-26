@@ -36,8 +36,11 @@ public class PillarController : Interactable
 
     private void SceneManager_OnLoadEventCompleted(string sceneName, UnityEngine.SceneManagement.LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
     {
-        progressBar = FindObjectOfType<ProgressBar>();
-        progressBar.maximum = timeToCollect;
+        if (sceneName == GameSceneController.Singleton.gameSceneName)
+        {
+            progressBar = FindObjectOfType<ProgressBar>();
+            progressBar.maximum = timeToCollect;
+        }
     }
 
     public override void OnNetworkSpawn()

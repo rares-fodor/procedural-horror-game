@@ -24,10 +24,21 @@ public class GameOverScreen : NetworkBehaviour
     private IEnumerator StopGame()
     {
         yield return new WaitForSeconds(5f);
-        if (IsServer) { 
-            NetworkManager.Singleton.Shutdown();
+
+        if (IsServer)
+        { 
+            GameSceneController.Singleton.LoadLobbyScene();
+            // NetworkGameController.Singleton.Shutdown();
+
+            List<PillarController> pillars = new List<PillarController>(FindObjectsOfType<PillarController>(true));
+            while (pillars.Count > 0)
+            {
+                var pillar = pillars[^1];
+                pillar.GetComponent<NetworkObject>().Despawn();
+                Destroy(pillar.gameObject);
+                pillars.RemoveAt(pillars.Count - 1);
+            }
         }
-        Application.Quit();
     }
 
 }

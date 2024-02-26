@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement;
 // Source: https://docs-multiplayer.unity3d.com/netcode/1.5.2/basics/scenemanagement/using-networkscenemanager/
 
 
-public class GameSceneController : NetworkBehaviour
+public class GameSceneController : MonoBehaviour
 {
 
 #if UNITY_EDITOR
@@ -27,17 +27,36 @@ public class GameSceneController : NetworkBehaviour
 
     private void Awake()
     {
-        Singleton = this;
+        if (Singleton == null)
+        {
+            Singleton = this;
+        } else if (Singleton != this)
+        {
+            Destroy(gameObject);
+        }
     }
 
     public void LoadGameScene()
     {
-        if (IsServer && !string.IsNullOrEmpty(gameSceneName))
+        Debug.Log("loading game scene");
+        if (!string.IsNullOrEmpty(gameSceneName))
         {
-            var status = NetworkManager.SceneManager.LoadScene(gameSceneName, LoadSceneMode.Single);
+            var status = NetworkManager.Singleton.SceneManager.LoadScene(gameSceneName, LoadSceneMode.Single);
             if (status != SceneEventProgressStatus.Started)
             {
                 Debug.LogWarning($"Scene {gameSceneName} failed with status: {status}");
+            }
+        }
+    }
+    public void LoadLobbyScene()
+    {
+        Debug.Log("loading lobby scene");
+        if (!string.IsNullOrEmpty(menuSceneName))
+        {
+            var status = NetworkManager.Singleton.SceneManager.LoadScene(menuSceneName, LoadSceneMode.Single);
+            if (status != SceneEventProgressStatus.Started)
+            {
+                Debug.LogWarning($"Scene {menuSceneName} failed with status: {status}");
             }
         }
     }
