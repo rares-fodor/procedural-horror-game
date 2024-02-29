@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
 using Unity.VisualScripting;
+using UnityEditor.Rendering;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
@@ -18,11 +19,14 @@ public class PlayerController : PlayableEntity
     public NetworkVariable<bool> isAlive = new NetworkVariable<bool>();
     private NetworkVariable<int> hitPoints = new NetworkVariable<int>();
 
+    private float unboostedSpeed;
+
     private void Awake()
     {
         indicatorInstance = Instantiate(indicator, new Vector3(0,0,0), Quaternion.identity);
         indicatorInstance.SetActive(false);
         hitPoints.OnValueChanged += OnDamageTaken;
+        unboostedSpeed = speed;
     }
 
     public override void OnNetworkSpawn()
@@ -115,6 +119,17 @@ public class PlayerController : PlayableEntity
         if (IsLocalPlayer)
         {
             UIController.Singleton.HPIndicatorController.HP = current;
+            if (prev > current)
+            {
+                StartCoroutine(SpeedBoost());
+            }
         }
+    }
+
+    private IEnumerator SpeedBoost()
+    {
+        speed *= 1.5f;
+        yield return new WaitForSeconds(5);
+        speed = unboostedSpeed;
     }
 }

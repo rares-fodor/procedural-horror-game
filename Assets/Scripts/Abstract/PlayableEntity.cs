@@ -14,6 +14,7 @@ public abstract class PlayableEntity : NetworkBehaviour
 
     [SerializeField] protected TMP_Text playerNameText;
 
+
     public override void OnNetworkSpawn()
     {
         if (!IsLocalPlayer) { return; }

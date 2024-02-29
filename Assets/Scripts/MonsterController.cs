@@ -33,6 +33,8 @@ public class MonsterController : PlayableEntity
 
     private void Update()
     {
+        if (!IsLocalPlayer) { return; }
+
         HandleMovement();
         if (Input.GetKeyDown(KeyCode.Z))
         {
