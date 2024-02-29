@@ -9,7 +9,7 @@ using Unity.Collections;
 public abstract class PlayableEntity : NetworkBehaviour
 {
     [SerializeField] protected float speed;
-    [SerializeField] protected Camera camera;
+    [SerializeField] protected Camera playerCamera;
     [SerializeField] protected GameObject cameraToggle;
 
     [SerializeField] protected TMP_Text playerNameText;
@@ -23,19 +23,15 @@ public abstract class PlayableEntity : NetworkBehaviour
 
     public abstract Vector3 GetSpawnLocation();
 
-    /// <summary>
-    /// Updates the player transform to reflect its movement
-    /// </summary>
-    /// <remarks>
-    /// The player moves either relative to the camera or to itself
-    /// depending on whether the player is freelooking (behind itself for example).
-    /// </remarks>
+
+    // The player moves either relative to the camera or to itself
+    // depending on whether the player is freelooking (behind itself for example).
     protected void HandleMovement()
     {
         if (FreeLooking())
         {
             ApplyRotation();
-            ApplyTranslation(camera.transform);
+            ApplyTranslation(playerCamera.transform);
         }
         else
         {
@@ -50,7 +46,7 @@ public abstract class PlayableEntity : NetworkBehaviour
 
     private void ApplyRotation()
     {
-        Quaternion rotation = camera.transform.rotation;
+        Quaternion rotation = playerCamera.transform.rotation;
         rotation.z = 0f;
         rotation.x = 0f;
 

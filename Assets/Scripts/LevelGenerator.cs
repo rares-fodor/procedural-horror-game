@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Unity.Netcode;
 using Unity.VisualScripting;
@@ -201,8 +202,9 @@ public class LevelGenerator : NetworkBehaviour
         }
     }
 
-    private void OnDestroy()
+    public override void OnDestroy()
     {
+        base.OnDestroy();
         Clear();
     }
 
@@ -243,6 +245,11 @@ public class LevelGenerator : NetworkBehaviour
         }
 
         texture.Apply();
+        var png_noise = texture.EncodeToPNG();
+        
+        // render noise to file
+        File.WriteAllBytes("/unity_noise.png", png_noise);
+
         return texture;
     }
 

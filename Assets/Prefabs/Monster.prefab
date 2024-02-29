@@ -1631,7 +1631,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 18
-  camera: {fileID: 3178038750416657327}
+  playerCamera: {fileID: 3178038750416657327}
   cameraToggle: {fileID: 841112858367827693}
   playerNameText: {fileID: 3136696564066713818}
   spawned: 0

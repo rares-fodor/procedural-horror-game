@@ -35,7 +35,6 @@ public class PlayerController : PlayableEntity
         {
             isAlive.Value = true;
             hitPoints.Value = Consts.PLAYER_MAX_HP;
-            // playerName.Value = NetworkGameController.Singleton.GetPlayerListDataByClientId(OwnerClientId).Value.name;
         }
 
         if (!IsOwner) { return; }
@@ -79,7 +78,8 @@ public class PlayerController : PlayableEntity
     private void UpdateHintPosition()
     {
         Vector3 direction = hintTarget - transform.position;
-        Vector3 pos = transform.position + direction.normalized * 2.0f;
+        Vector3 pos = transform.position + direction.normalized * 1.3f;
+        indicatorInstance.transform.LookAt(hintTarget);
         indicatorInstance.transform.position = pos;
     }
 
