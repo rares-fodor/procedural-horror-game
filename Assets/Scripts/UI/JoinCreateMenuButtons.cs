@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class JoinCreateMenuButtons : MonoBehaviour
@@ -10,6 +11,7 @@ public class JoinCreateMenuButtons : MonoBehaviour
     [SerializeField] private Button backButton;
     [SerializeField] private Button createGameButton;
     [SerializeField] private Button joinGameButton;
+    [SerializeField] private Button demoLevelButton;
 
     private void Awake()
     {
@@ -30,6 +32,11 @@ public class JoinCreateMenuButtons : MonoBehaviour
 
         backButton.onClick.AddListener(() =>
         {
+        });
+
+        demoLevelButton.onClick.AddListener(() =>
+        {
+            SceneManager.LoadScene("Demonstration", LoadSceneMode.Single);
         });
     }
 }

@@ -1219,9 +1219,10 @@ MonoBehaviour:
   cameraToggle: {fileID: 841112858367827693}
   playerNameText: {fileID: 1671119014813731246}
   indicator: {fileID: 1401711643490884504, guid: 770983e0b97593f4b94b06177bcaf5d7, type: 3}
+  remainingHints: 2
   isAlive:
     m_InternalValue: 0
-  remainingHints: 2
+  speedBoostFactor: 2
 --- !u!114 &5381395309333336875
 MonoBehaviour:
   m_ObjectHideFlags: 0

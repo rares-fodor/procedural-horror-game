@@ -19,14 +19,13 @@ public class PlayerController : PlayableEntity
     public NetworkVariable<bool> isAlive = new NetworkVariable<bool>();
     private NetworkVariable<int> hitPoints = new NetworkVariable<int>();
 
-    private float unboostedSpeed;
+    [SerializeField] private float speedBoostFactor;
 
     private void Awake()
     {
         indicatorInstance = Instantiate(indicator, new Vector3(0,0,0), Quaternion.identity);
         indicatorInstance.SetActive(false);
         hitPoints.OnValueChanged += OnDamageTaken;
-        unboostedSpeed = speed;
     }
 
     public override void OnNetworkSpawn()
@@ -128,8 +127,8 @@ public class PlayerController : PlayableEntity
 
     private IEnumerator SpeedBoost()
     {
-        speed *= 1.5f;
+        speed *= speedBoostFactor;
         yield return new WaitForSeconds(5);
-        speed = unboostedSpeed;
+        speed /= speedBoostFactor;
     }
 }
