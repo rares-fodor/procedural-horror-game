@@ -4,7 +4,7 @@ using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 
-public class GameOverScreen : NetworkBehaviour
+public class GameOverScreenController : NetworkBehaviour
 {
     [SerializeField] private TMP_Text gameOverMessage;
     [SerializeField] private GameObject GameOverUI;
@@ -28,7 +28,6 @@ public class GameOverScreen : NetworkBehaviour
         if (IsServer)
         { 
             GameSceneController.Singleton.LoadLobbyScene();
-            // NetworkGameController.Singleton.Shutdown();
 
             List<PillarController> pillars = new List<PillarController>(FindObjectsOfType<PillarController>(true));
             while (pillars.Count > 0)

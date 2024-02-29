@@ -245,11 +245,6 @@ public class LevelGenerator : NetworkBehaviour
         }
 
         texture.Apply();
-        var png_noise = texture.EncodeToPNG();
-        
-        // render noise to file
-        File.WriteAllBytes("/unity_noise.png", png_noise);
-
         return texture;
     }
 

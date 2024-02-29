@@ -11,6 +11,7 @@ using System.Linq;
 using System.Net.NetworkInformation;
 using System;
 using Unity.Collections;
+using UnityEngine.UIElements;
 
 public class NetworkGameController : NetworkBehaviour
 {
@@ -66,6 +67,7 @@ public class NetworkGameController : NetworkBehaviour
         {
             Destroy(gameObject);
         }
+
         OnClientFailedToJoin = new UnityEvent();
         OnClientConnected = new UnityEvent();
         OnHostStarted = new UnityEvent();
@@ -82,6 +84,7 @@ public class NetworkGameController : NetworkBehaviour
     {
         playersAlive.OnValueChanged += PlayerKilledCallback;
         gameProgress.OnValueChanged += GameProgressedCallback;
+        Debug.Log($"Spawned {name}");
     }
 
     private void SceneManager_OnLoadEventCompleted(string sceneName, LoadSceneMode loadSceneMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
@@ -215,7 +218,10 @@ public class NetworkGameController : NetworkBehaviour
         {
             NetworkManager.Singleton.OnClientConnectedCallback -= client_NetworkManager_OnClientConnectedCallback;
             NetworkManager.Singleton.OnClientDisconnectCallback -= client_NetworkManager_OnClientDisconnectCallback;
-            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= SceneManager_OnLoadEventCompleted;
+            if (NetworkManager.Singleton.SceneManager != null)
+            {
+                NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= SceneManager_OnLoadEventCompleted;
+            }
             Debug.Log("Shutdown client...");
         }
         else if (playerNetworkFunction == NetworkFunction.Server)

@@ -29,6 +29,10 @@ public class MonsterController : PlayableEntity
             var instance = Instantiate(indicator, Vector3.zero, Quaternion.identity);
             indicatorInstances.Add(instance);
         }
+
+        UIController.Singleton.tutorialScreenUI.SetMessage("You are the monster.\n" +
+            "You must catch all the survivors before they activate the pillars!\n" +
+            "Use the indicators around you to find the pillars.");
     }
 
     private void Update()
@@ -36,7 +40,9 @@ public class MonsterController : PlayableEntity
         if (!IsLocalPlayer) { return; }
 
         HandleMovement();
-        if (Input.GetKeyDown(KeyCode.Z))
+        
+        // Demonstration purpose teleport to a player
+        if (Input.GetKeyDown(KeyCode.F8))
         {
             target = FindFirstObjectByType<PlayerController>();
             var position = target.transform.position;

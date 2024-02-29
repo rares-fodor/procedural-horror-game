@@ -9,7 +9,7 @@ public class PlayerTools : MonoBehaviour
 
     private void Update()
     {
-        if (teleportToNextStone)
+        if (teleportToNextStone || Input.GetKeyDown(KeyCode.F7))
         {
             TeleportToNextStone();
             teleportToNextStone = false;

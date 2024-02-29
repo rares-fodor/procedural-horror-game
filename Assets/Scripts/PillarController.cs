@@ -115,7 +115,7 @@ public class PillarController : Interactable
         }
         progressTimer.Value += Time.deltaTime * speedUpModifier;
 
-        if (progressTimer.Value >= timeToCollect) { CollectItemClientRpc(); }
+        if (progressTimer.Value >= timeToCollect) { ActivatePillarClientRpc(); }
     }
 
 
@@ -146,10 +146,12 @@ public class PillarController : Interactable
     /// Invoke the game progress event and disable instance.
     /// </summary>
     [ClientRpc]
-    private void CollectItemClientRpc()
+    private void ActivatePillarClientRpc()
     {
         // Remove pillar from global list
         GameController.Singleton.RemovePillar(gameObject);
+
+        // Despite the naming convention, we deactivate the pillar to make it inactive in scene. It's active in spirit :).
         gameObject.SetActive(false);
 
         // NOTE: This will hide progress bars of players working on a different pillar.
