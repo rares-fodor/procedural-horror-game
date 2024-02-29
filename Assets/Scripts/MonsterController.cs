@@ -1,11 +1,16 @@
 using UnityEngine;
 using Unity.Netcode;
+using System.Collections.Generic;
 
 public class MonsterController : PlayableEntity
 {
     [SerializeField] private bool spawned;
 
     private PlayerController target;
+
+    [SerializeField] private GameObject indicator;
+
+    private List<GameObject> indicatorInstances = new List<GameObject>(Consts.PILLAR_COUNT);
 
     private void Awake()
     {
@@ -18,6 +23,12 @@ public class MonsterController : PlayableEntity
 
         if (!IsOwner) { return; }
         base.OnNetworkSpawn();
+
+        for (int i = 0; i < Consts.PILLAR_COUNT; i++)
+        {
+            var instance = Instantiate(indicator, Vector3.zero, Quaternion.identity);
+            indicatorInstances.Add(instance);
+        }
     }
 
     private void Update()
@@ -29,6 +40,8 @@ public class MonsterController : PlayableEntity
             var position = target.transform.position;
             transform.position = new Vector3(position.x - 10, 0.5f, position.z - 10);
         }
+
+        UpdateIndicatorPositions();
     }
 
     private void OnTriggerEnter(Collider other)
@@ -60,5 +73,30 @@ public class MonsterController : PlayableEntity
     private void MonsterSpawnedAndMovedServerRpc()
     {
         spawned = true;
+    }
+
+    private void UpdateIndicatorPositions()
+    {
+        var targets = GameController.Singleton.GetActivePillarPositions();
+        if (targets == null || targets.Count == 0) { return; }
+
+        for (int i = 0; i < targets.Count; i++)
+        {
+            var target = targets[i];
+            var indicator = indicatorInstances[i];
+
+            Vector3 direction = target - transform.position;
+            Vector3 pos = transform.position + direction.normalized * 1.3f;
+            indicator.transform.LookAt(target);
+            indicator.transform.position = pos;
+        }
+
+        for (int i = targets.Count; i < indicatorInstances.Count; i++)
+        {
+            indicatorInstances[i].SetActive(false);
+            Destroy(indicatorInstances[i]);
+            indicatorInstances.RemoveAt(i);
+            Debug.Log($"Players activated a pillar, current remaining count is: {indicatorInstances.Count}");
+        }
     }
 }

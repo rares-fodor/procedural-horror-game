@@ -23,7 +23,7 @@ public abstract class PlayableEntity : NetworkBehaviour
 
     public abstract Vector3 GetSpawnLocation();
 
-
+    
     // The player moves either relative to the camera or to itself
     // depending on whether the player is freelooking (behind itself for example).
     protected void HandleMovement()

@@ -9,14 +9,13 @@ public class PlayerController : PlayableEntity
 {
     [SerializeField] private GameObject indicator;
 
-    public NetworkVariable<bool> isAlive = new NetworkVariable<bool>();
-
     // Hint stuff
     public int remainingHints = 0;
     private GameObject indicatorInstance;
     private bool indicatorVisible = false;
     private Vector3 hintTarget;
 
+    public NetworkVariable<bool> isAlive = new NetworkVariable<bool>();
     private NetworkVariable<int> hitPoints = new NetworkVariable<int>();
 
     private void Awake()

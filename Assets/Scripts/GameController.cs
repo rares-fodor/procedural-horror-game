@@ -66,11 +66,7 @@ public class GameController : NetworkBehaviour
 
     public GameObject GetClosestObject(Vector3 position)
     {
-        if (pillars == null || pillars.Count == 0)
-        {
-            var pillarObjects = FindObjectsOfType<PillarController>();
-            pillars = pillarObjects.Select(p => p.gameObject).ToList();
-        }
+        ClientFindPillars();
 
         GameObject closest = pillars[0];
         float leastDistance = Vector3.Distance(pillars[0].transform.position, position);
@@ -86,6 +82,30 @@ public class GameController : NetworkBehaviour
         }
 
         return closest;
+    }
+
+    public List<Vector3> GetActivePillarPositions()
+    {
+        ClientFindPillars();
+
+        List<Vector3> positions = new List<Vector3>();
+        foreach (var pillar in pillars)
+        {
+            if (pillar.activeInHierarchy)
+            {
+                positions.Add(pillar.transform.position);
+            }
+        }
+        return positions;
+    }
+
+    private void ClientFindPillars()
+    {
+        if (pillars == null || pillars.Count == 0)
+        {
+            var pillarObjects = FindObjectsOfType<PillarController>();
+            pillars = pillarObjects.Select(p => p.gameObject).ToList();
+        }
     }
 
     public void NotifyPlayerKilled()

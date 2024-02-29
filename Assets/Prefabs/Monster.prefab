@@ -1635,6 +1635,7 @@ MonoBehaviour:
   cameraToggle: {fileID: 841112858367827693}
   playerNameText: {fileID: 3136696564066713818}
   spawned: 0
+  indicator: {fileID: 1401711643490884504, guid: 770983e0b97593f4b94b06177bcaf5d7, type: 3}
 --- !u!114 &5381395309333336875
 MonoBehaviour:
   m_ObjectHideFlags: 0

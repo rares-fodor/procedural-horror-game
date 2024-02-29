@@ -224,6 +224,7 @@ public class NetworkGameController : NetworkBehaviour
             {
                 HostShutdownClientRpc();
             }
+            monsterTaken.Value = false;
             playerList.Clear();
             NetworkManager.Singleton.ConnectionApprovalCallback -= NetworkManager_ConnectionApprovalCallback;
             NetworkManager.Singleton.OnClientConnectedCallback -= host_NetworkManager_OnClientConnectedCallback;

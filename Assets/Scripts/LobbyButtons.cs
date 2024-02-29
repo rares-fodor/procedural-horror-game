@@ -61,6 +61,11 @@ public class LobbyButtons : MonoBehaviour
 
         leaveButton.onClick.AddListener(() =>
         {
+            // Reset button state on leaving. If user created a game,
+            // toggled the button then left and joined another game it would have inconsistent state
+            monsterButtonText.text = "Play Monster";
+            monsterState = MonsterButtonState.IsSurvivor;
+
             NetworkGameController.Singleton.Shutdown();
             CanvasController.Singleton.SetActiveScreen(CanvasController.UIScreen.LobbyJoinCreate);    
         });
@@ -112,6 +117,8 @@ public class LobbyButtons : MonoBehaviour
     private void NetworkGameController_OnClientConnected()
     {
         // Treats joining a lobby after the monster has been taken.
+        monsterButtonText.text = "Play Monster";
+        monsterState = MonsterButtonState.IsSurvivor;
         if (NetworkGameController.Singleton.monsterTaken.Value == true)
         {
             monsterButton.interactable = false;
